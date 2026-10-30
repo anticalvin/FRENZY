@@ -125,9 +125,27 @@ label.k{display:block;font-size:12px;color:var(--mut);margin-top:12px}
 .lk{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .br{display:flex;align-items:center;gap:6px;padding:8px 8px 8px 14px;border-radius:16px;margin:6px 0;font-size:14px}.br span{flex:1}.br button{width:32px;height:32px;border-radius:50%;background:var(--gl)}.br .ey{width:auto;padding:0 12px;font-size:12px;border-radius:99px}
 .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translateX(-50%);z-index:99;padding:10px 18px;border-radius:99px;font-size:13px;animation:up .5s var(--sp)}
+/* ---------- direct messages: brutalist ---------- */
+.dmw{display:flex;flex-direction:column;height:min(72dvh,calc(var(--vvh,100dvh) - 120px));font-family:ui-monospace,"SF Mono",Menlo,monospace}
+.dmh{display:flex;align-items:center;gap:10px;padding:0 0 12px;border-bottom:2px solid var(--fg);text-transform:uppercase;letter-spacing:.06em;font-size:13px;font-weight:700}
+.dmh .sp{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dml{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:8px;padding:14px 4px 14px 0}
+.dmb{max-width:78%;padding:10px 12px;border:2px solid var(--fg);border-radius:0;font-size:15px;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;-webkit-user-select:text}
+.dmb.me{align-self:flex-end;background:var(--fg);color:var(--bg);box-shadow:-4px 4px 0 var(--mut)}
+.dmb.th{align-self:flex-start;box-shadow:4px 4px 0 var(--mut)}
+.dmt{align-self:center;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:6px 0;text-align:center}
+.dmc{display:flex;gap:8px;padding-top:12px;border-top:2px solid var(--fg)}
+.dmc textarea{flex:1;min-height:44px;max-height:120px;resize:none;border:2px solid var(--fg);border-radius:0;background:var(--bg);color:var(--fg);font:16px/1.3 ui-monospace,"SF Mono",Menlo,monospace;padding:10px;margin:0}
+.dmc button{min-width:64px;min-height:44px;border:2px solid var(--fg);border-radius:0;background:var(--fg);color:var(--bg);font:700 13px ui-monospace,Menlo,monospace;text-transform:uppercase;letter-spacing:.06em;cursor:pointer}
+.dmc button:disabled{opacity:.35}
+.dmi{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:10px 0;border:0;border-bottom:2px solid var(--fg);background:none;color:var(--fg);text-align:left;font:inherit;cursor:pointer;border-radius:0}
+.dmi img{width:40px;height:40px;object-fit:cover;border-radius:0;border:2px solid var(--fg)}
+.dmi .tx{flex:1;min-width:0}.dmi b{display:block;text-transform:uppercase;letter-spacing:.04em;font-size:13px}.dmi span{display:block;font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dmi i{font-style:normal;min-width:24px;height:24px;display:grid;place-items:center;background:var(--fg);color:var(--bg);font-size:12px;font-weight:700}
+#dm{position:relative}#dm .bd{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 4px;display:grid;place-items:center;background:var(--fg);color:var(--bg);font-size:11px;font-weight:700;border-radius:9px;font-style:normal}
 </style></head><body>
 <div id="splash"><canvas id="sc" width="440" height="440"></canvas><div id="sw">vzn</div></div>
-<div id="top"><b class="glass pill brand">vzn</b><div><button class="glass pill" id="mode">Drum</button><button class="glass pill" id="theme">Light</button></div></div>
+<div id="top"><b class="glass pill brand">vzn</b><div><button class="glass pill" id="dm">Chat</button><button class="glass pill" id="mode">Drum</button><button class="glass pill" id="theme">Light</button></div></div>
 <main>
 <section class="view on" id="feed"></section>
 <section class="view" id="explore"><div class="ex"><input class="glass" id="q" placeholder="Search"><div class="chips" id="chips"></div></div><div class="ppl" id="ppl"></div><div class="mas" id="mas"></div><div id="sen"></div></section>
@@ -283,7 +301,7 @@ async function sbInit(){cloudErr='';if(!VZN.key){cloudErr='no API key configured
   const r=await tmo(sb.from('posts').select('id',{head:true,count:'exact'}),7000);if(r.error)throw r.error;online=true;
   sb.auth.onAuthStateChange((ev,s)=>{const u=s?s.user:null;if(ev=='PASSWORD_RECOVERY')setTimeout(newPwSheet,300);if((u&&u.id)!==(user&&user.id)){user=u;afterAuth()}})}
  catch(e){online=false;sb=null;cloudErr=(e&&e.message)||'unreachable';console.warn('vzn cloud:',e)}}
-async function afterAuth(){if(authOv){authOv.remove();authOv=null}await loadProfile();await loadRemote();await loadCounts();await loadFollowing();drawChips();renderAll();if(user){toast('Signed in');if(!me.onboarded)onboard()}}
+async function afterAuth(){if(authOv){authOv.remove();authOv=null}dmInit();await loadProfile();await loadRemote();await loadCounts();await loadFollowing();drawChips();renderAll();if(user){toast('Signed in');if(!me.onboarded)onboard()}}
 async function loadRemote(){if(!online)return;
  const{data,error}=await sb.from('posts').select(POSTSEL).order('created_at',{ascending:false}).limit(80);
  if(error||!data)return;Object.keys(state.l).forEach(k=>{if(k.length>20)delete state.l[k]});Object.keys(state.s).forEach(k=>{if(k.length>20)delete state.s[k]});
@@ -353,10 +371,42 @@ async function profileSheet(handle){
  if(!isMe){const fb=h('button','pill on','');const paint=()=>{fb.textContent=following?'Following':'Follow';fb.classList.toggle('on',!following);fb.classList.toggle('glass',following);$('#nf',w).textContent=fc};
   fb.onclick=async()=>{if(!user){authSheet('Sign in to follow '+nm+'.');return}following=!following;fc+=following?1:-1;paint();hap('m');
    const r=following?await sb.from('follows').insert({follower:user.id,followee:pr.id}):await sb.from('follows').delete().eq('follower',user.id).eq('followee',pr.id);
-   if(r.error){following=!following;fc+=following?1:-1;paint();toast('Could not update follow. Try again.');hap('no')}};ra.append(fb);setTimeout(paint)}
+   if(r.error){following=!following;fc+=following?1:-1;paint();toast('Could not update follow. Try again.');hap('no')}};ra.append(fb);setTimeout(paint);const mb=h('button','glass pill','Message');mb.onclick=()=>{if(!user){authSheet('Sign in to message '+nm+'.');return}openChat(pr)};ra.append(mb)}
  const sh=h('button','glass pill','Share');sh.onclick=()=>{try{navigator.clipboard.writeText(location.origin+location.pathname+'#/u/'+pr.username)}catch{}toast('Profile link copied')};ra.append(sh);
  const gd=$('#gd',w);if(!list.length)gd.outerHTML='<p class="mut" style="text-align:center;margin-top:20px">Nothing posted yet.</p>';else list.forEach(p=>{const c=h('div','g');c.append(media({items:[p.items[0]]},{still:true}));c.onclick=()=>openPost(p);gd.append(c)});
  sheet(w,'pp')}
+/* ---------- direct messages ---------- */
+let DMU=0,dmCh=null;const DML=new Set();
+const dmTime=t=>{const d=new Date(t);return d.toDateString()==new Date().toDateString()?d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString([],{month:'short',day:'numeric'})};
+function dmBadge(){const b=$('#dm');let k=$('.bd',b);if(DMU>0){if(!k){k=h('i','bd');b.append(k)}k.textContent=DMU>9?'9+':DMU}else if(k)k.remove()}
+async function dmInit(){if(dmCh){try{sb.removeChannel(dmCh)}catch{}dmCh=null}DMU=0;dmBadge();if(!online||!user)return;
+ const r=await sb.from('messages').select('id',{count:'exact',head:true}).neq('sender',user.id).is('read_at',null);DMU=r.count||0;dmBadge();
+ dmCh=sb.channel('dm-'+user.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},p=>{const m=p.new;if(m.sender==user.id)return;let seen=false;[...DML].forEach(f=>{if(f(m))seen=true});if(!seen){DMU++;dmBadge();hap('m')}}).subscribe()}
+async function openInbox(){if(!online){toast('Messages need the cloud');return}if(!user){authSheet('Sign in to send messages.');return}
+ const w=h('div','dmw');w.innerHTML='<div class="dmh"><span class="sp">Messages</span></div><div class="dml" id="il"></div>';const il=$('#il',w);il.innerHTML='<div class="dmt">Loading</div>';sheet(w);
+ const cs=await sb.from('conversations').select('id,user_a,user_b,last_at').order('last_at',{ascending:false}).limit(40);
+ if(cs.error){il.innerHTML='<div class="dmt">Could not load messages. Try again.</div>';return}
+ const list=cs.data||[];if(!list.length){il.innerHTML='<div class="dmt">No messages yet. Open a profile and tap Message.</div>';return}
+ const oid=c=>c.user_a==user.id?c.user_b:c.user_a;
+ const[pr,ms]=await Promise.all([sb.from('profiles').select('id,username,display_name,avatar_url,verified').in('id',list.map(oid)),sb.from('messages').select('conv_id,sender,body,created_at,read_at').in('conv_id',list.map(c=>c.id)).order('created_at',{ascending:false}).limit(200)]);
+ const PM=Object.fromEntries((pr.data||[]).map(x=>[x.id,x])),last={},un={};(ms.data||[]).forEach(m=>{if(!last[m.conv_id])last[m.conv_id]=m;if(m.sender!=user.id&&!m.read_at)un[m.conv_id]=(un[m.conv_id]||0)+1});
+ il.replaceChildren(...list.map(c=>{const p=PM[oid(c)]||{id:oid(c),username:'unknown'},nm=p.display_name||p.username,l=last[c.id],b=h('button','dmi',`<img src="${esc(p.avatar_url||av(nm))}" alt=""><div class="tx"><b>${esc(nm)}${p.verified?VBADGE:''}</b><span>${l?(l.sender==user.id?'You: ':'')+esc(l.body):'No messages'}</span></div>${un[c.id]?`<i>${un[c.id]}</i>`:''}`);b.onclick=()=>openChat(p,c.id);return b}))}
+async function openChat(p,cid){if(!user){authSheet('Sign in to send messages.');return}
+ if(!cid){const r=await sb.rpc('start_dm',{other:p.id});if(r.error){toast(r.error.message||'Could not start chat');hap('no');return}cid=r.data}
+ const w=h('div','dmw');w.innerHTML=`<div class="dmh"><span class="sp">@${esc(p.username)}</span></div><div class="dml" id="cl"></div><form class="dmc"><textarea rows="1" maxlength="2000" placeholder="Message" aria-label="Message"></textarea><button type="submit">Send</button></form>`;
+ const cl=$('#cl',w),ta=$('textarea',w),sb2=$('button',w),shown=new Set();let lastDay='';
+ const add=m=>{if(shown.has(m.id))return;shown.add(m.id);cl.querySelectorAll('.dmt.e').forEach(x=>x.remove());const d=new Date(m.created_at).toDateString();if(d!=lastDay){lastDay=d;cl.append(h('div','dmt',esc(new Date(m.created_at).toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}))))}
+  const b=h('div','dmb '+(m.sender==user.id?'me':'th'));b.textContent=m.body;b.title=dmTime(m.created_at);cl.append(b);cl.scrollTop=cl.scrollHeight};
+ sheet(w);const mark=()=>sb.from('messages').update({read_at:new Date().toISOString()}).eq('conv_id',cid).neq('sender',user.id).is('read_at',null).then(r=>{if(!r.error)dmInit()});
+ const hist=await sb.from('messages').select('id,sender,body,created_at').eq('conv_id',cid).order('created_at',{ascending:false}).limit(80);
+ if(hist.error)cl.innerHTML='<div class="dmt">Could not load messages. Try again.</div>';else{if(!hist.data.length)cl.append(h('div','dmt e','Say hi'));hist.data.reverse().forEach(add)}mark();
+ const live=m=>{if(!w.isConnected){DML.delete(live);return false}if(m.conv_id!=cid)return false;add(m);hap('l');mark();return true};DML.add(live);
+ const send=async()=>{const body=ta.value.trim();if(!body)return;sb2.disabled=true;ta.value='';ta.style.height='';const r=await sb.from('messages').insert({conv_id:cid,sender:user.id,body}).select('id,sender,body,created_at').single();sb2.disabled=false;
+  if(r.error){ta.value=body;toast('Message not sent. Check your connection and try again.');hap('no')}else{add(r.data);hap('ok')}ta.focus()};
+ $('form',w).onsubmit=e=>{e.preventDefault();send()};
+ ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(120,ta.scrollHeight)+'px'});
+ ta.addEventListener('keydown',e=>{if(e.key=='Enter'&&!e.shiftKey&&matchMedia('(hover:hover)').matches){e.preventDefault();send()}})}
+$('#dm').onclick=openInbox;
 async function myBoards(){const r=await sb.from('boards').select('id,name,board_posts(post_id)').eq('user_id',user.id).order('created_at');return r.data||[]}
 function newBoard(done){const w=h('div','',`<h3>New board</h3><input id="bn" maxlength="60" placeholder="Board name"><button class="pill on big" id="go">Create</button><div class="mut" id="am" role="status" style="text-align:center;min-height:20px"></div>`);const o=sheet(w);
  $('#go',w).onclick=async()=>{const n=$('#bn',w).value.trim();if(!n){$('#am',w).textContent='Give the board a name.';return}const r=await sb.from('boards').insert({user_id:user.id,name:n}).select('id,name').single();if(r.error){$('#am',w).textContent='Could not create the board: '+r.error.message;hap('no');return}o.remove();hap('ok');done&&done(r.data)}}
