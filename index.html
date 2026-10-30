@@ -43,7 +43,7 @@ button{background:none;border:0;cursor:pointer;padding:0}
 .drum{position:relative;width:100%;height:100%;perspective:1100px;touch-action:pan-x;overflow:hidden;user-select:none;-webkit-user-select:none;background:var(--bg)}
 .drum.sm{touch-action:pan-y}
 .card{position:absolute;left:50%;top:50%;border-radius:18px;overflow:hidden;background:#222;will-change:transform,opacity;box-shadow:0 20px 50px rgba(0,0,0,.3)}
-.card img,.card video,.card canvas{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.card>.p5,.fp .m>.p5{width:100%;height:100%}.card img,.card video,.card canvas{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
 .note{width:100%;height:100%;padding:8%;display:flex;align-items:center;font-family:var(--fh);font-size:clamp(14px,3.4vw,22px);line-height:1.2;letter-spacing:-.02em;color:#000;background:#f2f2f2;overflow:hidden}
 .lab{position:absolute;top:50%;transform:translateY(-50%);font-size:13px;font-weight:600;z-index:200;pointer-events:none;max-width:22%;line-height:1.15;mix-blend-mode:difference;color:#fff}
 .lab.l{left:14px}.lab.r{right:14px;text-align:right}
@@ -92,7 +92,7 @@ label.k{display:block;font-size:12px;color:var(--mut);margin-top:12px}
 .tile u{position:absolute;bottom:2px;left:2px;right:2px;display:flex;justify-content:space-between;text-decoration:none;color:#fff;font-size:12px}
 /* explore */
 .ex{position:sticky;top:0;z-index:5;padding:calc(env(safe-area-inset-top,0px) + 14px) 12px 8px;background:linear-gradient(var(--bg) 75%,transparent)}
-.ex input{border-radius:99px;margin:0 0 8px}
+.ppl{display:flex;gap:10px;overflow-x:auto;padding:0 12px;scrollbar-width:none}.ppl:not(:empty){padding-bottom:12px}.pp1{flex:none;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 8px;border-radius:99px;min-height:44px;cursor:pointer}.pp1 img{width:36px;height:36px;border-radius:50%;object-fit:cover}.pp1 b{display:block;font-size:14px}.pp1 span{font-size:12px;color:var(--mut)}.pp1 button{min-height:36px;padding:0 14px}.ex input{border-radius:99px;margin:0 0 8px}
 .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.chips .pill{flex:none}
 .it img{opacity:0;filter:blur(14px);transform:scale(1.04);transition:opacity .4s,filter .5s,transform .5s}.it img.ld{opacity:1;filter:none;transform:none}@media(prefers-reduced-motion:reduce){.it img{transition:none;filter:none;transform:none}}#sen{height:1px}.mas{display:flex;gap:6px;padding:0 6px;align-items:flex-start}
 .mc{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -130,7 +130,7 @@ label.k{display:block;font-size:12px;color:var(--mut);margin-top:12px}
 <div id="top"><b class="glass pill brand">vzn</b><div><button class="glass pill" id="mode">Drum</button><button class="glass pill" id="theme">Light</button></div></div>
 <main>
 <section class="view on" id="feed"></section>
-<section class="view" id="explore"><div class="ex"><input class="glass" id="q" placeholder="Search"><div class="chips" id="chips"></div></div><div class="mas" id="mas"></div><div id="sen"></div></section>
+<section class="view" id="explore"><div class="ex"><input class="glass" id="q" placeholder="Search"><div class="chips" id="chips"></div></div><div class="ppl" id="ppl"></div><div class="mas" id="mas"></div><div id="sen"></div></section>
 <section class="view" id="act"></section>
 <section class="view" id="me"></section>
 </main>
@@ -227,7 +227,7 @@ function Drum(host,list,open,small){
  const n=list.length,cards=list.map(p=>{const c=h('div','card');c.append(media(p,{drum:true}));host.append(c);return c}),ars=list.map(p=>snap(p.ar||.8)),hs=[];
  const L=h('div','lab l'),R=h('div','lab r');
  if(!small)host.append(L,R);else{const U=h('button','stp u glass','▲'),D=h('button','stp d glass','▼');host.append(U,D);U.onpointerdown=D.onpointerdown=e=>e.stopPropagation();U.onclick=()=>{go=clamp(Math.round(pos)-1,0,n-1);run()};D.onclick=()=>{go=clamp(Math.round(pos)+1,0,n-1);run()}}
- let pos=0,vel=0,go=null,drag=false,down=false,can=false,mv=0,ly=0,raf=0,mh,mw,step,lastN=0,live=false;
+ let wt,pos=0,vel=0,go=null,drag=false,down=false,can=false,mv=0,ly=0,lt=0,lm=0,raf=0,mh,mw,step,lastN=0,live=false;
  function lay(){const H=host.clientHeight||600,W=host.clientWidth||360;mh=H*(small?.52:.5);mw=W*(small?.62:.8);step=mh*.62;cards.forEach((c,i)=>{const w=Math.min(mw,mh*ars[i]);hs[i]=w/ars[i];c.style.width=w+'px';c.style.height=hs[i]+'px'});draw()}
  function draw(){const m=Math.round(pos),E=hs.map((hh,i)=>hh*Math.max(.3,1-Math.abs(i-pos)*.15)),Dd=(a,b)=>(E[a]+E[b])*.3,f=clamp(Math.floor(pos),0,n-1),Y=new Array(n);
   Y[f]=-(pos-f)*(f<n-1?Dd(f,f+1):Dd(f,f)*0+step);for(let i=f+1;i<n;i++)Y[i]=Y[i-1]+Dd(i-1,i);for(let i=f-1;i>=0;i--)Y[i]=Y[i+1]-Dd(i,i+1);
@@ -235,18 +235,18 @@ function Drum(host,list,open,small){
   c.style.transform=`translate(-50%,-50%) translateY(${Y[i]}px) rotateX(${-d*40}deg) scale(${Math.max(.3,1-a*.15)})`;
   c.style.opacity=Math.max(0,1-a*.27);c.style.filter=a>.35?`blur(${Math.min(a,3)*.7}px)`:'';c.style.zIndex=100-Math.round(a*10);c.style.visibility=a>3.6?'hidden':'visible';
   const fch=c.firstChild,v=c.querySelector('video');if(v){if(i==m&&!drag)v.play().catch(()=>{});else v.pause()}
-  if(fch&&fch.classList&&fch.classList.contains('p5'))setLive(fch,a<.6)});
+  if(fch&&fch.classList&&fch.classList.contains('p5'))setLive(fch,a<.6&&(Math.abs(vel)<2||!!fch.firstChild))});
   if(m!=lastN){lastN=m;if(live)hap('l')}
   const p=list[clamp(m,0,n-1)];if(p&&!small){L.textContent=nameOf(p);R.textContent=p.items.length>1?'Carousel':({video:'Video',note:'Note',p5:'Sketch'}[p.items[0].t]||'Image')}}
- function tick(){raf=0;if(!drag){if(go!=null){pos+=(go-pos)*.16;if(Math.abs(go-pos)<.002){pos=go;go=null}}
-  else{pos+=vel;vel*=.93;if(pos<-.3||pos>n-.7)vel*=.5;if(Math.abs(vel)<.004){pos+=(clamp(Math.round(pos),0,n-1)-pos)*.18;vel=0}}}
-  draw();if(drag||go!=null||Math.abs(vel)>.0005||Math.abs(pos-Math.round(pos))>.002)run();else live=false}
+ function tick(t){raf=0;const dt=Math.min(.033,lt?(t-lt)/1000:.016);lt=t;
+  if(!drag&&go!=null){vel+=((go-pos)*190-vel*24)*dt;pos+=vel*dt;if(Math.abs(go-pos)<.002&&Math.abs(vel)<.03){pos=go;vel=0;go=null}}
+  draw();if(drag||go!=null)run();else{live=false;lt=0}}
  const run=()=>{live=true;if(!raf)raf=requestAnimationFrame(tick)};
- host.addEventListener('wheel',e=>{if(Math.abs(e.deltaX)>Math.abs(e.deltaY)||small)return;e.preventDefault();go=null;vel+=clamp(e.deltaY,-60,60)/step*.045;run()},{passive:false});
- host.addEventListener('pointerdown',e=>{down=true;mv=0;ly=e.clientY;vel=0;go=null;can=!small||e.pointerType=='mouse';drag=can;if(can)try{host.setPointerCapture(e.pointerId)}catch{}});
- host.addEventListener('pointermove',e=>{if(!down)return;const d=(e.clientY-ly)/step;ly=e.clientY;mv+=Math.abs(d)*step;if(!can)return;pos-=d;vel=-d;run()});
- host.addEventListener('pointercancel',()=>{down=false;drag=false;run()});
- host.addEventListener('pointerup',e=>{const was=down;down=false;drag=false;if(was&&mv<8){const c=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.classList&&x.classList.contains('card')),i=cards.indexOf(c);if(i>-1){if(i==Math.round(pos))open(list[i]);else go=i}}run()});
+ host.addEventListener('wheel',e=>{if(Math.abs(e.deltaX)>Math.abs(e.deltaY)||small)return;e.preventDefault();go=null;vel=0;pos=clamp(pos+clamp(e.deltaY,-80,80)/step*.9,-.35,n-.65);clearTimeout(wt);wt=setTimeout(()=>{go=clamp(Math.round(pos),0,n-1);run()},110);run()},{passive:false});
+ host.addEventListener('pointerdown',e=>{down=true;mv=0;ly=e.clientY;lm=performance.now();vel=0;go=null;can=!small||e.pointerType=='mouse';drag=can;if(can)try{host.setPointerCapture(e.pointerId)}catch{}});
+ host.addEventListener('pointermove',e=>{if(!down)return;const d=(e.clientY-ly)/step,now=performance.now();ly=e.clientY;mv+=Math.abs(d)*step;if(!can)return;pos-=d*(pos<0||pos>n-1?.35:1);vel=vel*.6+(-d/Math.max(.004,(now-lm)/1000))*.4;lm=now;run()});
+ host.addEventListener('pointercancel',()=>{down=false;drag=false;go=clamp(Math.round(pos),0,n-1);run()});
+ host.addEventListener('pointerup',e=>{const was=down;down=false;drag=false;if(was&&mv<8){const c=document.elementsFromPoint(e.clientX,e.clientY).find(x=>x.classList&&x.classList.contains('card')),i=cards.indexOf(c);if(i>-1){if(i==Math.round(pos))open(list[i]);else go=i}}if(was&&mv>=8&&can)go=clamp(Math.round(pos+vel*.16),Math.round(pos)-2,Math.round(pos)+2),go=clamp(go,0,n-1);else if(go==null)go=clamp(Math.round(pos),0,n-1);run()});
  host.addEventListener('keydown',e=>{if(e.key=='ArrowDown'){go=Math.min(n-1,Math.round(pos)+1);run()}if(e.key=='ArrowUp'){go=Math.max(0,Math.round(pos)-1);run()}});host.tabIndex=0;
  lay();new ResizeObserver(lay).observe(host)}
 /* ---------- feed ---------- */
@@ -417,7 +417,17 @@ async function exFetchMore(){if(exBusy||exEnd||!online)return;exBusy=true;
 function renderExplore(){const q=$('#q').value.toLowerCase(),cols=innerWidth<700?2:innerWidth<1100?3:4,key=tag+'|'+q+'|'+cols+'|'+P.length+'|'+(P[0]&&P[0].id)+'|'+FOL.size;if(key==exKey)return;exKey=key;
  exCs=Array.from({length:cols},()=>h('div','mc'));exHs=Array(cols).fill(0);exSeen=new Set();exList=exFilter();exN=0;exMore();$('#mas').replaceChildren(...exCs)}
 if('IntersectionObserver' in window)new IntersectionObserver(es=>{if(!es[0].isIntersecting||curV!='explore')return;if(exN<exList.length)exMore();else exFetchMore()},{rootMargin:'600px'}).observe($('#sen'));
-let qt;$('#q').oninput=()=>{clearTimeout(qt);qt=setTimeout(renderExplore,160)};
+let qt,pq=0;
+async function findPeople(){const box=$('#ppl'),q=$('#q').value.trim().replace(/[%,()*]/g,''),id=++pq;if(q.length<2||!online){box.replaceChildren();return}
+ const r=await sb.from('profiles').select('id,username,display_name,avatar_url,verified').or(`username.ilike.%${q}%,display_name.ilike.%${q}%`).limit(12);if(id!=pq)return;
+ const list=(r.data||[]).filter(x=>!user||x.id!=user.id);box.replaceChildren(...list.map(x=>{const nm=x.display_name||x.username,c=h('div','pp1 glass',`<img src="${esc(x.avatar_url||av(nm))}" alt=""><div><b>${esc(nm)}${x.verified?VBADGE:''}</b><span>@${esc(x.username)}</span></div>`);
+  c.onclick=()=>profileSheet(x.username);
+  const fb=h('button','pill'),paint=()=>{const f=FOL.has(x.id);fb.textContent=f?'Following':'Follow';fb.className='pill '+(f?'glass':'on')};paint();
+  fb.onclick=async e=>{e.stopPropagation();if(!user){authSheet('Sign in to follow '+nm+'.');return}const f=FOL.has(x.id);f?FOL.delete(x.id):FOL.add(x.id);paint();hap('m');
+   const q2=f?await sb.from('follows').delete().eq('follower',user.id).eq('followee',x.id):await sb.from('follows').insert({follower:user.id,followee:x.id});
+   if(q2.error){f?FOL.add(x.id):FOL.delete(x.id);paint();toast('Could not update follow. Try again.');hap('no')}};c.append(fb);return c}));
+ if(!list.length)box.append(h('span','mut','No people match.'))}
+$('#q').oninput=()=>{clearTimeout(qt);qt=setTimeout(()=>{renderExplore();findPeople()},200)};
 /* ---------- activity ---------- */
 function renderAct(){const a=$('#act');a.innerHTML='';const w=h('div','pf');w.append(h('h3','nm','Activity'));w.firstChild.style.margin='24px 0 16px';
  const ev=['liked','saved','commented on','started following you after seeing'];
