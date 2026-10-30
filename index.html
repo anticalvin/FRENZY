@@ -263,7 +263,7 @@ function Drum(host,list,open,small){
  const L=h('div','lab l'),R=h('div','lab r');
  if(!small)host.append(L,R);else{const U=h('button','stp u glass','▲'),D=h('button','stp d glass','▼');host.append(U,D);U.onpointerdown=D.onpointerdown=e=>e.stopPropagation();U.onclick=()=>{go=clamp(Math.round(pos)-1,0,n-1);run()};D.onclick=()=>{go=clamp(Math.round(pos)+1,0,n-1);run()}}
  let wt,pos=0,vel=0,go=null,drag=false,down=false,can=false,mv=0,ly=0,lt=0,lm=0,raf=0,mh,mw,step,lastN=0,live=false;
- function lay(){const H=host.clientHeight||600,W=host.clientWidth||360;mh=H*(small?.52:.5);mw=W*(small?.62:.8);step=mh*.62;cards.forEach((c,i)=>{const w=Math.min(mw,mh*ars[i]);hs[i]=w/ars[i];c.style.width=w+'px';c.style.height=hs[i]+'px'});draw()}
+ function lay(){const H=host.clientHeight||600,W=host.clientWidth||360;mh=H*(small?.52:.5);mw=W*(small?.62:.8);step=mh*.62;const cw=Math.min(W,Math.round(mh*1.15)+28),ex=Math.max(0,(W-cw)/2);L.style.left=ex+14+'px';R.style.right=ex+14+'px';L.style.maxWidth=R.style.maxWidth=Math.round(cw*.22)+'px';cards.forEach((c,i)=>{const w=Math.min(mw,mh*ars[i]);hs[i]=w/ars[i];c.style.width=w+'px';c.style.height=hs[i]+'px'});draw()}
  function draw(){const m=Math.round(pos),E=hs.map((hh,i)=>hh*Math.max(.3,1-Math.abs(i-pos)*.15)),Dd=(a,b)=>(E[a]+E[b])*.3,f=clamp(Math.floor(pos),0,n-1),Y=new Array(n);
   Y[f]=-(pos-f)*(f<n-1?Dd(f,f+1):Dd(f,f)*0+step);for(let i=f+1;i<n;i++)Y[i]=Y[i-1]+Dd(i-1,i);for(let i=f-1;i>=0;i--)Y[i]=Y[i+1]-Dd(i,i+1);
   cards.forEach((c,i)=>{const d=i-pos,a=Math.abs(d);
@@ -529,7 +529,7 @@ function openPublish(pre){
   go.disabled=!(D.items.length||cap.value.trim())};
  const show=n=>{const sk=n==2&&!D.items.length;step=sk?3:n;$$('.pst',w).forEach(e=>{const on=e.dataset.s==step;e.hidden=!on;if(on)e.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:260,easing:'ease-out'})});$('#pt',w).textContent=T3[step-1];$('#bk',w).style.visibility=step>1?'visible':'hidden';$('#nx',w).style.display=step<3?'':'none';refresh()};
  $('#nx',w).onclick=()=>{hap('l');show(step+1)};$('#bk',w).onclick=()=>{hap('l');show(step==3&&!D.items.length?1:step-1)};
- const add=async fs=>{const r=(await Promise.all([...fs].map(natural))).filter(Boolean);D.items.push(...r);refresh();if(r.length==1&&r[0].t=='image')editPhoto(r[0],refresh)};
+ const add=async fs=>{const r=(await Promise.all([...fs].map(natural))).filter(Boolean);D.items.push(...r);refresh();if(r.length==1&&r[0].t=='image'){if(D.items.length==1){const nx=()=>{D.ar='o';show(3)};editPhoto(r[0],nx,nx)}else editPhoto(r[0],refresh)}};
  $('#fl',w).onchange=e=>add(e.target.files);const dz=$('#dz',w);
  dz.ondragover=e=>{e.preventDefault();dz.classList.add('hot')};dz.ondragleave=()=>dz.classList.remove('hot');dz.ondrop=e=>{e.preventDefault();dz.classList.remove('hot');add(e.dataTransfer.files)};
  const tg=()=>{const t=$('#tg',w);t.innerHTML='';['film','digital','series','process','music','p5'].forEach(n=>{const b=h('button','glass pill'+(D.tags.has(n)?' on':''),n);b.onclick=()=>{D.tags.has(n)?D.tags.delete(n):D.tags.add(n);tg()};t.append(b)})};
@@ -551,7 +551,7 @@ function adjustPx(d,W,H,E){const bo=E.b/100*60,cf=1+E.c/100*.8,sk=1+E.s/100,wo=E
   if(fd){r+=(150-r)*fd;g+=(150-g)*fd;b+=(150-b)*fd}
   if(vg){const dx=x-cx,dy=y-cy,k=1-vg*((dx*dx+dy*dy)/mx);r*=k;g*=k;b*=k}
   px[i]=r<0?0:r>255?255:r;px[i+1]=g<0?0:g>255?255:g;px[i+2]=b<0?0:b>255?255:b}}
-function editPhoto(it,done){if(!it.src){it.src=it.url;it.sar=it.ar}
+function editPhoto(it,done,cancel){if(!it.src){it.src=it.url;it.sar=it.ar}
  const im=new Image();im.onerror=()=>toast('Could not open that photo.');im.onload=()=>{
   const IW=im.naturalWidth,IH=im.naturalHeight,E=Object.assign({ratio:'o',z:1,cx:IW/2,cy:IH/2,b:0,c:0,s:0,w:0,f:0,v:0,grid:'thirds'},it.ed||{});
   const ov=h('div','ped');ov.setAttribute('role','dialog');ov.setAttribute('aria-label','Crop and adjust');
@@ -578,8 +578,8 @@ function editPhoto(it,done){if(!it.src){it.src=it.url;it.sar=it.ar}
    else{P.set(e.pointerId,[e.clientX,e.clientY]);const a=[...P.values()];E.z=clamp(z0*Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1])/d0,1,5);if(tab=='Crop')panel();draw()}};
   const up=e=>{P.delete(e.pointerId);if(!P.size)gh(false)};pv.onpointerup=pv.onpointercancel=up;
   pv.addEventListener('wheel',e=>{e.preventDefault();E.z=clamp(E.z*(1-e.deltaY*.002),1,5);if(tab=='Crop')panel();draw()},{passive:false});
-  const close=()=>{removeEventListener('keydown',kd);removeEventListener('resize',size);ov.remove()},kd=e=>{if(e.key=='Escape')close()};addEventListener('keydown',kd);addEventListener('resize',size);
-  $o('#pc').onclick=close;
+  const close=()=>{removeEventListener('keydown',kd);removeEventListener('resize',size);ov.remove()},kd=e=>{if(e.key=='Escape'){close();cancel&&cancel()}};addEventListener('keydown',kd);addEventListener('resize',size);
+  $o('#pc').onclick=()=>{close();cancel&&cancel()};
   $o('#pd').onclick=async()=>{const g=geom(),same=E.ratio=='o'&&E.z==1&&!PADJ.some(([k])=>E[k]);
    if(!same){const k=Math.min(1,2048/Math.max(g.sw,g.sh)),c=document.createElement('canvas');c.width=Math.max(2,Math.round(g.sw*k));c.height=Math.max(2,Math.round(g.sh*k));paint(c,g.sx,g.sy,g.sw,g.sh);
     const b=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));if(!b){toast('Could not save that edit. Try again.');hap('no');return}
@@ -590,24 +590,31 @@ function editPhoto(it,done){if(!it.src){it.src=it.url;it.sar=it.ar}
 /* ---------- camera: slides in from the left of the feed ---------- */
 const CV=h('div','');CV.id='camv';CV.innerHTML='<div class="edge" id="cedge"></div>';document.body.append(CV);
 let camX=0,camFrame=null,camT=0;const camW=()=>innerWidth;
+let camReady=false,camWant=false;
 function camMount(){if(camFrame)return;camFrame=h('iframe');camFrame.title='Camera';camFrame.setAttribute('allow','camera; microphone; fullscreen');camFrame.src='cam/index.html';CV.prepend(camFrame)}
-function camUnmount(){if(!camFrame)return;try{camFrame.contentWindow.postMessage({n0ise:'stop'},location.origin)}catch{}camFrame.remove();camFrame=null}
-function camSet(x,anim){clearTimeout(camT);camX=clamp(x,0,camW());CV.style.transition=anim?'transform .4s cubic-bezier(.2,.9,.25,1)':'none';CV.style.visibility='visible';CV.style.transform=`translate3d(${camX-camW()}px,0,0)`;
- if(anim)camT=setTimeout(()=>{if(camX<=0){CV.style.visibility='hidden';camUnmount()}},430)}
+const camPost=m=>{try{camFrame&&camFrame.contentWindow.postMessage(m,location.origin)}catch{}};
+function camStart(){camMount();camWant=true;if(camReady)camPost({n0ise:'start'})}
+function camStop(){camWant=false;camPost({n0ise:'stop'})}
+function camSet(x,anim){clearTimeout(camT);camX=clamp(x,0,camW());const tr=anim?'transform .4s cubic-bezier(.2,.9,.25,1)':'none',fd=$('#feed');CV.style.transition=tr;fd.style.transition=tr;CV.style.visibility='visible';CV.style.transform=`translate3d(${camX-camW()}px,0,0)`;
+ fd.style.transform=camX?`translate3d(${camX*.28}px,0,0)`:'';CV.style.boxShadow=camX?'0 0 70px rgba(0,0,0,.6)':'none';
+ if(camX>camW()*.04)camStart();else if(!camX)camStop();
+ if(anim)camT=setTimeout(()=>{if(camX<=0){CV.style.visibility='hidden'}},430)}
 const camOpen=()=>camX>=camW()-1,camLive=()=>camX>0;
-function openCamera(){if(!camFrame)camMount();camSet(camW(),true);hap('m')}
+function openCamera(){camSet(camW(),true);hap('m')}
 function closeCamera(){camSet(0,true);hap('l')}
 function camDrag(el,start,when){let sx=0,sy=0,t0=0,mode=0,x0=0;
  el.addEventListener('touchstart',e=>{if(e.touches.length!=1||!when())return;const t=e.touches[0];sx=t.clientX;sy=t.clientY;t0=performance.now();mode=0;x0=start()},{passive:true});
  el.addEventListener('touchmove',e=>{if(!when()&&!mode)return;const t=e.touches[0],dx=t.clientX-sx,dy=t.clientY-sy;
-  if(!mode){if(Math.abs(dx)<10&&Math.abs(dy)<10)return;if(Math.abs(dx)>Math.abs(dy)*1.6&&((x0==0&&dx>0)||(x0>0&&dx<0))){mode=1;if(!camFrame)camMount()}else{mode=-1;return}}
+  if(!mode){if(Math.abs(dx)<10&&Math.abs(dy)<10)return;if(Math.abs(dx)>Math.abs(dy)*1.6&&((x0==0&&dx>0)||(x0>0&&dx<0))){mode=1;camMount()}else{mode=-1;return}}
   if(mode==1){if(e.cancelable)e.preventDefault();camSet(x0+dx,false)}},{passive:false});
  const end=e=>{if(mode!=1){mode=0;return}mode=0;const t=e.changedTouches[0],dx=t.clientX-sx,v=dx/Math.max(1,performance.now()-t0),W=camW();const open=x0==0?(camX>W*.3||v>.5):(camX>W*.7&&v>-.5);open?(camSet(W,true),hap('m')):(camSet(0,true),hap('l'))};
  el.addEventListener('touchend',end);el.addEventListener('touchcancel',end)}
 camDrag($('#feed'),()=>camX,()=>curV=='feed'&&!nSheets&&!camLive());
 camDrag($('#cedge'),()=>camW(),()=>camOpen());
 addEventListener('resize',()=>{if(camOpen())camSet(camW(),false)});
+setTimeout(()=>(window.requestIdleCallback?requestIdleCallback(camMount):camMount()),1800);
 addEventListener('message',e=>{if(e.origin!==location.origin)return;const d=e.data;if(!d||!d.n0ise)return;
+ if(d.n0ise=='ready'){camReady=true;if(camWant)camPost({n0ise:'start'})}
  if(d.n0ise=='close')closeCamera();
  if(d.n0ise=='post'&&d.blob){closeCamera();const f=new File([d.blob],d.name||'n0ise.jpg',{type:d.blob.type||'image/jpeg'});setTimeout(()=>openPublish([f]),300)}});
 /* ---------- profile ---------- */

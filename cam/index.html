@@ -1691,13 +1691,19 @@ function boot(){
   requestAnimationFrame(frame);
 }
 boot();
-/* ---------- vzn embed: close and hand a capture to the host app ---------- */
+/* ---------- vzn embed: no intro, host starts/stops the camera, hands captures back ---------- */
 if(window.parent!==window){
   const host=m=>parent.postMessage(m,location.origin);
   $('bVzn').hidden=false;$('pvPost').hidden=false;
+  $('intro').classList.add('off');$('app').classList.remove('intro');S.attract=false;
   $('bVzn').onclick=()=>host({n0ise:'close'});
   $('pvPost').onclick=()=>{ if(!pvItem) return; host({n0ise:'post',blob:pvItem.blob,name:pvItem.name,kind:pvItem.type}); closePreview(); };
-  addEventListener('message',e=>{ if(e.origin!==location.origin) return; if(e.data&&e.data.n0ise==='stop'){ stopStream(); } });
+  let starting=false;
+  addEventListener('message',async e=>{ if(e.origin!==location.origin||!e.data) return;
+    if(e.data.n0ise==='stop'){ stopStream(); S.live=false; }
+    if(e.data.n0ise==='start'&&!S.live&&!starting){ starting=true; try{ await startCamera({facing:S.facing||'environment'}); setFilter(S.filter,{silent:true}); }catch(err){ camFail(err); } starting=false; }
+  });
+  host({n0ise:'ready'});
 }
 </script>
 </body>
