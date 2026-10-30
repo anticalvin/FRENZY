@@ -283,21 +283,24 @@ async function sbInit(){cloudErr='';if(!VZN.key){cloudErr='no API key configured
   const r=await tmo(sb.from('posts').select('id',{head:true,count:'exact'}),7000);if(r.error)throw r.error;online=true;
   sb.auth.onAuthStateChange((ev,s)=>{const u=s?s.user:null;if(ev=='PASSWORD_RECOVERY')setTimeout(newPwSheet,300);if((u&&u.id)!==(user&&user.id)){user=u;afterAuth()}})}
  catch(e){online=false;sb=null;cloudErr=(e&&e.message)||'unreachable';console.warn('vzn cloud:',e)}}
-async function afterAuth(){if(authOv){authOv.remove();authOv=null}await loadProfile();await loadRemote();renderAll();if(user){toast('Signed in');if(!me.onboarded)onboard()}}
+async function afterAuth(){if(authOv){authOv.remove();authOv=null}await loadProfile();await loadRemote();await loadCounts();renderAll();if(user){toast('Signed in');if(!me.onboarded)onboard()}}
 async function loadRemote(){if(!online)return;
- const{data,error}=await sb.from('posts').select('id,title,caption,credits,tags,ar,user_id,created_at,profiles(username,display_name,avatar_url),post_items(kind,path,code,body,ar,position),likes(count),comments(count)').order('created_at',{ascending:false}).limit(80);
+ const{data,error}=await sb.from('posts').select(POSTSEL).order('created_at',{ascending:false}).limit(80);
  if(error||!data)return;Object.keys(state.l).forEach(k=>{if(k.length>20)delete state.l[k]});Object.keys(state.s).forEach(k=>{if(k.length>20)delete state.s[k]});
  if(user){const[a,b]=await Promise.all([sb.from('likes').select('post_id').eq('user_id',user.id),sb.from('saves').select('post_id').eq('user_id',user.id)]);(a.data||[]).forEach(r=>state.l[r.post_id]=true);(b.data||[]).forEach(r=>state.s[r.post_id]=true)}
- REMOTE=data.map(r=>({id:r.id,remote:true,seed:r.id.charCodeAt(0)+r.id.charCodeAt(1),title:r.title||'',caption:r.caption||'',credits:r.credits||'',tags:r.tags||[],ar:r.ar,uid:r.user_id,mine:!!user&&r.user_id==user.id,author:(r.profiles&&(r.profiles.display_name||r.profiles.username))||'unknown',
-  likes:(r.likes&&r.likes[0]&&r.likes[0].count)||0,items:(r.post_items||[]).sort((a,b)=>a.position-b.position).map(i=>({t:i.kind,url:i.path?pub(i.path):'',code:i.code,text:i.body,ar:i.ar||r.ar}))})).filter(p=>p.items.length);rebuildP()}
+ REMOTE=data.map(mapPost).filter(p=>p.items.length);rebuildP()}
+const POSTSEL='id,title,caption,credits,tags,ar,user_id,created_at,profiles(username,display_name,avatar_url,verified),post_items(kind,path,code,body,ar,position),likes(count),comments(count)';
+const mapPost=r=>({id:r.id,remote:true,seed:r.id.charCodeAt(0)+r.id.charCodeAt(1),title:r.title||'',caption:r.caption||'',credits:r.credits||'',tags:r.tags||[],ar:r.ar,uid:r.user_id,mine:!!user&&r.user_id==user.id,handle:r.profiles&&r.profiles.username,verified:!!(r.profiles&&r.profiles.verified),author:(r.profiles&&(r.profiles.display_name||r.profiles.username))||'unknown',
+  likes:(r.likes&&r.likes[0]&&r.likes[0].count)||0,items:(r.post_items||[]).sort((a,b)=>a.position-b.position).map(i=>({t:i.kind,url:i.path?pub(i.path):'',code:i.code,text:i.body,ar:i.ar||r.ar}))});
 async function upData(d,name){const blob=await(await fetch(d)).blob(),path=`${user.id}/${name}`;const r=await sb.storage.from('media').upload(path,blob,{upsert:true,contentType:'image/jpeg'});if(r.error)throw r.error;return pub(path)+'?v='+Date.now()}
 async function loadProfile(){if(!online)return;if(!user){me=baseMe();applyMe();return}
  let{data}=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();
  if(!data){const r=await sb.from('profiles').insert({id:user.id,username:'user_'+user.id.replace(/-/g,'').slice(0,8),display_name:(user.email||'you').split('@')[0]}).select().single();data=r.data}
  if(!data)return;me=Object.assign(blankMe(),data.settings||{},{name:data.display_name||'You',handle:data.username,bio:data.bio||'',avatarImg:data.avatar_url||'',verified:!!data.verified});DB.forEach(d=>{if(!me.blocks.find(b=>b.k==d.k))me.blocks.push({...d})});applyMe()}
+async function loadCounts(){if(!online||!user)return;const c=col=>sb.from('follows').select('*',{head:true,count:'exact'}).eq(col,user.id);const[a,b]=await Promise.all([c('followee'),c('follower')]);me.counts={f:a.count||0,g:b.count||0}}
 async function saveProfile(){if(!online||!user)return true;
  try{if(me.avatarImg&&me.avatarImg.startsWith('data:'))me.avatarImg=await upData(me.avatarImg,'avatar.jpg');if(me.bannerImg&&me.bannerImg.startsWith('data:'))me.bannerImg=await upData(me.bannerImg,'banner.jpg');
-  const s={...me};['name','handle','bio','avatarImg','verified'].forEach(k=>delete s[k]);
+  const s={...me};['name','handle','bio','avatarImg','verified','counts'].forEach(k=>delete s[k]);
   const r=await sb.from('profiles').update({display_name:me.name,username:me.handle.toLowerCase().replace(/[^a-z0-9_.]/g,'').slice(0,30),bio:me.bio,avatar_url:me.avatarImg||null,settings:s}).eq('id',user.id);if(r.error)throw r.error;return true}
  catch(e){toast(/duplicate|unique/i.test(e.message||'')?'That handle is taken':'Could not sync profile');return false}}
 const AMSG={'Invalid login credentials':'That email and password don’t match, or the email isn’t confirmed yet.','Email not confirmed':'Confirm your email first. Check your inbox, then sign in.','User already registered':'That email already has an account. Sign in instead.'};
@@ -334,11 +337,48 @@ async function publishRemote(rec,items){const{data:post,error}=await sb.from('po
   rows.push({post_id:post.id,position:i,kind:it.t,path,code:it.t=='p5'?it.code:null,body:it.t=='note'?it.text:null,ar:it.ar})}
  const r=await sb.from('post_items').insert(rows);if(r.error)throw r.error}
 /* ---------- viewer ---------- */
+/* ---------- public profiles, follows, boards ---------- */
+const route=()=>{const m=location.hash.match(/^#\/u\/([a-z0-9_.]+)/i);if(!m)return;const hd=m[1];history.replaceState(null,'',location.pathname+location.search);profileSheet(hd)};
+addEventListener('hashchange',route);
+async function profileSheet(handle){
+ if(!online){toast('Profiles need the cloud'+(cloudErr?': '+cloudErr:''));return}
+ const{data:pr}=await sb.from('profiles').select('id,username,display_name,bio,avatar_url,verified').eq('username',String(handle).toLowerCase()).maybeSingle();
+ if(!pr){toast('No one goes by @'+handle);return}
+ const cnt=async col=>(await sb.from('follows').select('*',{head:true,count:'exact'}).eq(col,pr.id)).count||0;
+ const[nF,nG,mine,ps]=await Promise.all([cnt('followee'),cnt('follower'),user?sb.from('follows').select('follower').eq('follower',user.id).eq('followee',pr.id).maybeSingle():null,
+  sb.from('posts').select(POSTSEL).eq('user_id',pr.id).order('created_at',{ascending:false}).limit(60)]);
+ let following=!!(mine&&mine.data),fc=nF;const list=(ps.data||[]).map(mapPost).filter(p=>p.items.length).map(p=>({...p,mine:!!user&&p.uid==user.id}));
+ const nm=pr.display_name||pr.username,w=h('div','',`<div class="ph"><div class="av"><img src="${esc(pr.avatar_url||av(nm))}" alt=""></div><h1 class="nm">${esc(nm)}${pr.verified?VBADGE:''}</h1><div class="mut">@${esc(pr.username)}</div></div>${pr.bio?`<p class="bio">${esc(pr.bio)}</p>`:''}<div class="stats"><div><b>${list.length}</b>Posts</div><div><b id="nf">${fc}</b>Followers</div><div><b>${nG}</b>Following</div></div><div class="row" id="ra" style="justify-content:center"></div><div class="grid" id="gd" style="margin:16px -20px 0"></div>`);
+ const ra=$('#ra',w),isMe=!!user&&user.id==pr.id;
+ if(!isMe){const fb=h('button','pill on','');const paint=()=>{fb.textContent=following?'Following':'Follow';fb.classList.toggle('on',!following);fb.classList.toggle('glass',following);$('#nf',w).textContent=fc};
+  fb.onclick=async()=>{if(!user){authSheet('Sign in to follow '+nm+'.');return}following=!following;fc+=following?1:-1;paint();hap('m');
+   const r=following?await sb.from('follows').insert({follower:user.id,followee:pr.id}):await sb.from('follows').delete().eq('follower',user.id).eq('followee',pr.id);
+   if(r.error){following=!following;fc+=following?1:-1;paint();toast('Could not update follow. Try again.');hap('no')}};ra.append(fb);setTimeout(paint)}
+ const sh=h('button','glass pill','Share');sh.onclick=()=>{try{navigator.clipboard.writeText(location.origin+location.pathname+'#/u/'+pr.username)}catch{}toast('Profile link copied')};ra.append(sh);
+ const gd=$('#gd',w);if(!list.length)gd.outerHTML='<p class="mut" style="text-align:center;margin-top:20px">Nothing posted yet.</p>';else list.forEach(p=>{const c=h('div','g');c.append(media({items:[p.items[0]]},{still:true}));c.onclick=()=>openPost(p);gd.append(c)});
+ sheet(w,'pp')}
+async function myBoards(){const r=await sb.from('boards').select('id,name,board_posts(post_id)').eq('user_id',user.id).order('created_at');return r.data||[]}
+function newBoard(done){const w=h('div','',`<h3>New board</h3><input id="bn" maxlength="60" placeholder="Board name"><button class="pill on big" id="go">Create</button><div class="mut" id="am" role="status" style="text-align:center;min-height:20px"></div>`);const o=sheet(w);
+ $('#go',w).onclick=async()=>{const n=$('#bn',w).value.trim();if(!n){$('#am',w).textContent='Give the board a name.';return}const r=await sb.from('boards').insert({user_id:user.id,name:n}).select('id,name').single();if(r.error){$('#am',w).textContent='Could not create the board: '+r.error.message;hap('no');return}o.remove();hap('ok');done&&done(r.data)}}
+async function drawBoards(body){body.innerHTML='<p class="mut">Loading…</p>';const bs=await myBoards();body.innerHTML='';
+ const nb=h('button','glass pill','New board');nb.onclick=()=>newBoard(()=>drawBoards(body));body.append(nb);
+ if(!bs.length)body.append(h('p','mut','Boards group posts you like into collections anyone can see.'));
+ bs.forEach(b=>{const ids=b.board_posts.map(x=>x.post_id),ps=ids.map(id=>P.find(p=>p.id==id)).filter(Boolean).slice(0,3);const el=h('div','board',ps.map(p=>`<img src="${thumb(p)}" alt="">`).join('')+`<div><b>${esc(b.name)}</b><div class="mut">${ids.length} ${ids.length==1?'piece':'pieces'}</div></div>`);el.onclick=()=>boardSheet(b,()=>drawBoards(body));body.append(el)})}
+function boardSheet(b,done){const ids=b.board_posts.map(x=>x.post_id),ps=ids.map(id=>P.find(p=>p.id==id)).filter(Boolean);
+ const w=h('div','',`<h3>${esc(b.name)}</h3><div class="grid" id="gd" style="margin:0 -20px"></div><div class="row" style="margin-top:14px"><button class="pill" id="dl">Delete board</button></div>`);const gd=$('#gd',w);
+ if(!ps.length)gd.outerHTML='<p class="mut">Nothing here yet. Open a post and tap Board to add it.</p>';else ps.forEach(p=>{const c=h('div','g');c.append(media({items:[p.items[0]]},{still:true}));c.onclick=()=>openPost(p);gd.append(c)});
+ const o=sheet(w);$('#dl',w).onclick=async()=>{if(!confirm('Delete this board? The posts stay.'))return;const r=await sb.from('boards').delete().eq('id',b.id);if(r.error){toast('Could not delete the board');return}o.remove();done&&done()}}
+async function pickBoard(p){if(need('Sign in to use boards.'))return;const bs=await myBoards();const w=h('div','',`<h3>Add to board</h3>`);const o=sheet(w);
+ const draw=bs2=>{$$('.bp',w).forEach(x=>x.remove());bs2.forEach(b=>{let on=b.board_posts.some(x=>x.post_id==p.id);const bt=h('button','glass pill bp'+(on?' on':''),esc(b.name));bt.style.cssText='display:block;width:100%;margin-bottom:8px;text-align:left';
+  bt.onclick=async()=>{on=!on;bt.classList.toggle('on',on);hap('m');const r=on?await sb.from('board_posts').insert({board_id:b.id,post_id:p.id}):await sb.from('board_posts').delete().eq('board_id',b.id).eq('post_id',p.id);
+   if(r.error){on=!on;bt.classList.toggle('on',on);toast('Could not update the board');hap('no')}else b.board_posts=on?[...b.board_posts,{post_id:p.id}]:b.board_posts.filter(x=>x.post_id!=p.id)};w.append(bt)})};
+ draw(bs);const nb=h('button','pill on big','New board');nb.onclick=()=>newBoard(async()=>{bs.length=0;bs.push(...await myBoards());draw(bs)});w.append(nb)}
 function openPost(p){
  let o,s;const dz=h('div','dz'),gr=h('div','grab','<button aria-label="Close">✕</button>'),vf=h('div','vf');
  const ar=p.ar||.8,stg=h('div','stg');vf.style.setProperty('--ar',ar);
  vf.append(media(p,{live:true}));$$('video',vf).forEach(v=>v.controls=true);stg.append(vf);dz.append(gr,stg);
- const vi=h('div','vi',`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h3 style="margin:0">${esc(p.title||'Untitled')}</h3><span class="mut">${esc(nameOf(p))}</span></div><p style="margin:8px 0">${esc(p.caption)}</p><div class="mut">${esc(p.credits||'')}</div>`);
+ const vi=h('div','vi',`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h3 style="margin:0">${esc(p.title||'Untitled')}</h3><span class="mut" ${p.handle&&!p.mine?'role="link" tabindex="0" data-nodrag style="cursor:pointer"':''} id="au">${esc(nameOf(p))}${p.verified?VBADGE:''}</span></div><p style="margin:8px 0">${esc(p.caption)}</p><div class="mut">${esc(p.credits||'')}</div>`);
+ const au=$('#au',vi);if(p.handle&&!p.mine)au.onclick=()=>profileSheet(p.handle);
  const row=h('div','row'),cm=h('div');const b=(t,fn)=>{const x=h('button','glass pill',t);x.onclick=()=>fn(x);return x};
  const cnt=()=>p.remote?p.likes:(p.seed%40)+(state.l[p.id]?1:0);
  const lk=b('',async()=>{if(p.remote&&need('Sign in to like posts.'))return;const on=!state.l[p.id];state.l[p.id]=on;if(p.remote)p.likes+=on?1:-1;save();up();hap('m');
@@ -347,6 +387,7 @@ function openPost(p){
   if(p.remote){const r=on?await sb.from('saves').insert({post_id:p.id,user_id:user.id}):await sb.from('saves').delete().eq('post_id',p.id).eq('user_id',user.id);if(r.error){state.s[p.id]=!on;up()}}});
  const up=()=>{lk.textContent=(state.l[p.id]?'Liked':'Like')+(me.hide?'':' · '+cnt());lk.classList.toggle('on',!!state.l[p.id]);sv.textContent=state.s[p.id]?'Saved':'Save';sv.classList.toggle('on',!!state.s[p.id])};up();
  row.append(lk,sv,b('Share',()=>{try{navigator.clipboard.writeText(location.href.split('#')[0]+'#'+p.id)}catch{}toast('Link copied')}));
+ if(p.remote&&user)row.append(b('Board',()=>pickBoard(p)));
  if(p.remote&&p.mine)row.append(b('Delete',async()=>{if(!confirm('Delete this post?'))return;const r=await sb.from('posts').delete().eq('id',p.id);if(r.error){toast('Could not delete');return}REMOTE=REMOTE.filter(x=>x.id!=p.id);rebuildP();close();renderAll()}));
  let cms=state.c[p.id]||[];const draw=()=>{cm.innerHTML='';cms.forEach(c=>cm.append(h('div','cm',`<b>${esc(c.n||me.name)}</b> ${esc(c.t||c)}`)))};
  if(p.remote){sb.from('comments').select('body,profiles(display_name,username)').eq('post_id',p.id).order('created_at').then(r=>{cms=(r.data||[]).map(c=>({n:c.profiles&&(c.profiles.display_name||c.profiles.username),t:c.body}));draw()})}else draw();
@@ -424,21 +465,23 @@ function renderMe(){const v=$('#me');v.innerHTML='';tint(v,me.bg);const mine=P.f
  const hasB=me.banner!='none';
  if(hasB){const b=h('div','bn');b.style.background=me.banner=='image'&&me.bannerImg?`url("${me.bannerImg}") center/cover`:me.banner=='color'?me.bannerColor:`url("${art(99+me.name.length,2.2)}") center/cover`;v.append(b)}
  const hd=h('div','ph'+(hasB?' hb':''));hd.innerHTML=`<div class="av" style="border-radius:${RAD[me.shape]}"><img src="${me.avatarImg||av(me.name)}" alt=""></div><h1 class="nm">${esc(me.name)}${me.verified?VBADGE:''}</h1><div class="mut">@${esc(me.handle)}</div>`;
- const ar=h('div','row'),eb=h('button','pill on','Edit profile'),sb2=h('button','glass pill','Share');eb.onclick=editMe;sb2.onclick=()=>{try{navigator.clipboard.writeText(location.href)}catch{}toast('Profile link copied')};ar.append(eb,sb2);
+ const ar=h('div','row'),eb=h('button','pill on','Edit profile'),sb2=h('button','glass pill','Share');eb.onclick=editMe;sb2.onclick=()=>{try{navigator.clipboard.writeText(user?location.origin+location.pathname+'#/u/'+me.handle:location.href)}catch{}toast('Profile link copied')};ar.append(eb,sb2);
  if(!user){const si=h('button','glass pill','Sign in');si.onclick=()=>authSheet();ar.append(si)}hd.append(ar);w.append(hd);
  const B={bio:()=>h('div','',`<span class="glass pill"><i class="dot"></i>${esc(me.avail)}</span><p class="bio">${esc(me.bio)}</p>`),
-  stats:()=>me.hide?null:h('div','stats',online?`<div><b>${mine.length}</b>Posts</div>`:`<div><b>${mine.length}</b>Posts</div><div><b>2.4k</b>Followers</div><div><b>318</b>Following</div>`),
+  stats:()=>me.hide?null:h('div','stats',online&&user&&me.counts?`<div><b>${mine.length}</b>Posts</div><div><b>${me.counts.f}</b>Followers</div><div><b>${me.counts.g}</b>Following</div>`:online?`<div><b>${mine.length}</b>Posts</div>`:`<div><b>${mine.length}</b>Posts</div><div><b>2.4k</b>Followers</div><div><b>318</b>Following</div>`),
   now:()=>(!me.making&&!me.listening&&!me.at)?null:h('div','now glass',`<span>Making</span><div>${esc(me.making)}</div><span>Listening</span><div>${esc(me.listening)}</div><span>At</span><div>${esc(me.at)}</div>`),
   links:()=>{if(!me.links.length)return null;const l=h('div','lk');me.links.forEach(x=>{const a=h('a','glass pill',esc(x.l));a.href=x.u||'#';a.style.cssText='color:inherit;text-decoration:none';l.append(a)});return l},
   work:()=>{const wk=h('div','work');if(!mine.length){wk.innerHTML='<p class="mut" style="padding:0 16px">Post something and it shows up here.</p>';return wk}
    if(me.layout=='drum'){const d=h('div','pdrum');wk.append(d);Drum(d,mine,openPost,true)}
    else{const g=h('div',me.layout=='grid'?'grid':me.layout=='contact'?'contact':'mosaic');mine.forEach((p,i)=>{const c=h('div','g');c.append(media({items:[p.items[0]]},{still:true}));if(me.layout=='contact')c.append(h('i','',String(i+1).padStart(2,'0')+'A'));c.onclick=()=>openPost(p);g.append(c)});wk.append(g)}return wk},
-  more:()=>{const box=h('div'),sec=h('div','sec'),body=h('div');let cur='Feed';
+  more:()=>{const box=h('div'),sec=h('div','sec'),body=h('div');let cur='Posts';
    const show=()=>{$$('button',sec).forEach(b=>b.classList.toggle('on',b.textContent==cur));body.innerHTML='';
-    if(cur=='Feed'){const g=h('div','grid');g.style.margin='0 -16px';mine.forEach(p=>{const c=h('div','g');c.append(media({items:[p.items[0]]},{still:true}));c.onclick=()=>openPost(p);g.append(c)});body.append(g)}
-    if(cur=='Boards')[['Quiet colour','series'],['Gear & process','process'],['Film','film']].forEach(([n,t])=>{const ps=P.filter(p=>p.tags.includes(t)).slice(0,3);body.append(h('div','board',ps.map(p=>`<img src="${thumb(p)}" alt="">`).join('')+`<div><b>${n}</b><div class="mut">${ps.length} pieces</div></div>`))});
+    if(cur=='Posts'){const g=h('div','grid');g.style.margin='0 -16px';mine.forEach(p=>{const c=h('div','g');c.append(media({items:[p.items[0]]},{still:true}));c.onclick=()=>openPost(p);g.append(c)});body.append(g)}
+    if(cur=='Saved'){const sv=P.filter(p=>state.s[p.id]);if(!sv.length)body.innerHTML='<p class="mut">Only you see this. Save a post and it shows up here.</p>';else{const g=h('div','grid');g.style.margin='0 -16px';sv.forEach(p=>{const c=h('div','g');c.append(media({items:[p.items[0]]},{still:true}));c.onclick=()=>openPost(p);g.append(c)});body.append(g)}}
+    if(cur=='Boards'&&online&&user)drawBoards(body);
+    else if(cur=='Boards')[['Quiet colour','series'],['Gear & process','process'],['Film','film']].forEach(([n,t])=>{const ps=P.filter(p=>p.tags.includes(t)).slice(0,3);body.append(h('div','board',ps.map(p=>`<img src="${thumb(p)}" alt="">`).join('')+`<div><b>${n}</b><div class="mut">${ps.length} pieces</div></div>`))});
     if(cur=='About')body.innerHTML=`<p style="line-height:1.5">${esc(me.bio)}</p><p class="mut">Shows: Low Light, 2026 · Signal/Noise group show, 2025<br>Press: Frame Quarterly, Index Mag<br>Collaborators: ${others.join(', ')}</p>`};
-   ['Feed','Boards','About'].forEach(n=>{const b=h('button','glass pill',n);b.onclick=()=>{cur=n;show()};sec.append(b)});show();box.append(sec,body);return box}};
+   ['Posts','Boards','Saved','About'].forEach(n=>{const b=h('button','glass pill',n);b.onclick=()=>{cur=n;show()};sec.append(b)});show();box.append(sec,body);return box}};
  me.blocks.forEach(b=>{if(!b.on)return;const e=B[b.k]();if(e)w.append(e)});v.append(w)}
 const down=(f,m)=>new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,m/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(i.src);r(c.toDataURL('image/jpeg',.82))};i.src=URL.createObjectURL(f)});
 function editMe(){const f=h('div','');const sw=['#ffffff','#ff4d2e','#3d7bff','#19c37d','#ffd400','#c06bff'];const E=JSON.parse(JSON.stringify(me));
@@ -497,5 +540,5 @@ setTheme(ls.get('th','dark'));applyMe();drawChips();renderFeed();snapInd('feed')
  const end=()=>{if(done)return;done=true;sp.classList.add('out');setTimeout(()=>sp.remove(),750)};
  (function f(now){if(done)return;const t=(now-t0)/1000;mark(c,t,1-Math.pow(1-Math.min(1,t/1.5),3),fgc());if(t>.9)$('#sw').classList.add('in');if(t>(rm?.6:2.5))end();else requestAnimationFrame(f)})(t0);sp.onclick=end})();
 idb('readonly',s=>s.getAll()).then(rows=>{if(!rows||!rows.length)return;rows.sort((a,b)=>a.id<b.id?1:-1).forEach(r=>{if(!r.items)r.items=[{t:r.type=='note'?'note':r.type,blob:r.blob,text:r.caption,ar:.8}];r.items.forEach(i=>{if(i.blob)i.url=URL.createObjectURL(i.blob)});r.ar=r.ar||r.items[0].ar||.8;r.tags=Array.isArray(r.tags)?r.tags:[];r.seed=r.seed||7;LOCAL.unshift(r)});rebuildP();renderAll()});
-sbInit().then(async()=>{if(!online){toast('Cloud offline: '+cloudErr);return}await loadProfile();await loadRemote();renderAll();if(user&&!me.onboarded)onboard()});
+sbInit().then(async()=>{if(!online){toast('Cloud offline: '+cloudErr);return}await loadProfile();await loadRemote();await loadCounts();renderAll();route();if(user&&!me.onboarded)onboard()});
 </script></body></html>
