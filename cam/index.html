@@ -167,7 +167,9 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 #intro.off{opacity:0;pointer-events:none}
 #app.intro #above,#app.intro #con,#app.intro #top{opacity:0;pointer-events:none}
 #above,#con,#top{transition:opacity .5s}
-#intro h1{font-weight:800;font-size:clamp(78px,27vw,138px);line-height:.82;letter-spacing:-.085em;margin-left:-4px}
+#iBack{position:absolute;top:calc(var(--sat,0px) + 14px);left:14px;min-height:44px;padding:0 16px;border-radius:22px;font-weight:700;font-size:15px;background:rgba(255,255,255,.12);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+#iBack[hidden]{display:none}
+#intro h1{font-weight:800;font-size:clamp(56px,min(27vw,24dvh),138px);white-space:nowrap;width:max-content;max-width:none;line-height:.82;letter-spacing:-.085em;margin-left:-4px}
 #intro p{margin:18px 0 22px;font-size:16px;line-height:1.45;color:rgba(255,255,255,.82);max-width:30ch;font-weight:500}
 #go{height:60px;border-radius:30px;background:var(--acc);color:#000;font-weight:800;font-size:18px;letter-spacing:-.03em;transition:background .6s,transform .15s}
 #go:active{transform:scale(.97)}
@@ -258,6 +260,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   </div>
 
   <div id="intro">
+    <button id="iBack" aria-label="Back to vzn" hidden>‹ vzn</button>
     <h1>n0ise</h1>
     <p>47 live looks, rendered on your GPU. Drag the picture to play it like an instrument.</p>
     <button id="go">Open camera</button>
@@ -1691,17 +1694,19 @@ function boot(){
   requestAnimationFrame(frame);
 }
 boot();
+function fitTitle(){const h=$('intro').querySelector('h1'),tw=$('intro').clientWidth-48-4;if(!tw)return;h.style.fontSize='100px';const w=h.getBoundingClientRect().width||1;h.style.fontSize=Math.max(40,Math.min(100*tw/w,innerHeight*.26))+'px'}
+fitTitle();addEventListener('resize',fitTitle);if(document.fonts)document.fonts.ready.then(fitTitle);
 /* ---------- vzn embed: no intro, host starts/stops the camera, hands captures back ---------- */
 if(window.parent!==window){
   const host=m=>parent.postMessage(m,location.origin);
   $('bVzn').hidden=false;$('pvPost').hidden=false;
-  $('intro').classList.add('off');$('app').classList.remove('intro');S.attract=false;
+  const showIntro=()=>{S.attract=true;$('intro').classList.remove('off');$('app').classList.add('intro')};
+  $('iBack').hidden=false;$('iBack').onclick=()=>host({n0ise:'close'});
   $('bVzn').onclick=()=>host({n0ise:'close'});
   $('pvPost').onclick=()=>{ if(!pvItem) return; host({n0ise:'post',blob:pvItem.blob,name:pvItem.name,kind:pvItem.type}); closePreview(); };
   let starting=false;
   addEventListener('message',async e=>{ if(e.origin!==location.origin||!e.data) return;
-    if(e.data.n0ise==='stop'){ stopStream(); S.live=false; }
-    if(e.data.n0ise==='start'&&!S.live&&!starting){ starting=true; try{ await startCamera({facing:S.facing||'environment'}); setFilter(S.filter,{silent:true}); }catch(err){ camFail(err); } starting=false; }
+    if(e.data.n0ise==='stop'){ stopStream(); S.live=false; showIntro(); }
   });
   host({n0ise:'ready'});
 }

@@ -525,7 +525,7 @@ function openPublish(pre){
   const st=$('#st',w);st.innerHTML='';D.items.forEach((it,i)=>{const t=h('div','tile');t.append(it.t=='p5'?h('div','tx','p5'):it.t=='video'?Object.assign(h('video'),{src:it.url+'#t=0.1',muted:true}):Object.assign(h('img'),{src:it.url}));
    const x=h('b','','✕');x.onclick=ev=>{ev.stopPropagation();D.items.splice(i,1);refresh()};const u=h('u','',`<button style="color:#fff">‹</button><button style="color:#fff">›</button>`);const[l,r]=$$('button',u);
    l.onclick=ev=>{ev.stopPropagation();if(i>0){[D.items[i-1],D.items[i]]=[D.items[i],D.items[i-1]];refresh()}};r.onclick=ev=>{ev.stopPropagation();if(i<D.items.length-1){[D.items[i+1],D.items[i]]=[D.items[i],D.items[i+1]];refresh()}};if(it.t=='image'){t.style.cursor='pointer';t.title='Crop and adjust';t.onclick=()=>editPhoto(it,refresh)}t.append(x,u);st.append(t)});
-  const ch=$('#ars',w);ch.innerHTML='';AR.forEach(([n,v])=>{const b=h('button','glass pill'+(D.ar==v?' on':''),n);b.onclick=()=>{D.ar=v;refresh()};ch.append(b)});
+  const ch=$('#ars',w);ch.innerHTML='';AR.forEach(([n,v])=>{const b=h('button','glass pill'+(D.ar==v?' on':''),n);b.onclick=async()=>{D.ar=v;await Promise.all(D.items.map(i=>reshape(i,v)));refresh()};ch.append(b)});
   go.disabled=!(D.items.length||cap.value.trim())};
  const show=n=>{const sk=n==2&&!D.items.length;step=sk?3:n;$$('.pst',w).forEach(e=>{const on=e.dataset.s==step;e.hidden=!on;if(on)e.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:260,easing:'ease-out'})});$('#pt',w).textContent=T3[step-1];$('#bk',w).style.visibility=step>1?'visible':'hidden';$('#nx',w).style.display=step<3?'':'none';refresh()};
  $('#nx',w).onclick=()=>{hap('l');show(step+1)};$('#bk',w).onclick=()=>{hap('l');show(step==3&&!D.items.length?1:step-1)};
@@ -551,6 +551,18 @@ function adjustPx(d,W,H,E){const bo=E.b/100*60,cf=1+E.c/100*.8,sk=1+E.s/100,wo=E
   if(fd){r+=(150-r)*fd;g+=(150-g)*fd;b+=(150-b)*fd}
   if(vg){const dx=x-cx,dy=y-cy,k=1-vg*((dx*dx+dy*dy)/mx);r*=k;g*=k;b*=k}
   px[i]=r<0?0:r>255?255:r;px[i+1]=g<0?0:g>255?255:g;px[i+2]=b<0?0:b>255?255:b}}
+const EDEF={ratio:'o',z:1,cx:0,cy:0,b:0,c:0,s:0,w:0,f:0,v:0,grid:'thirds'};
+async function applyEdit(it,im,E){const IW=im.naturalWidth,IH=im.naturalHeight,a=E.ratio=='o'?clamp(IW/IH,.5,2):E.ratio,m=Math.max(a/IW,1/IH)*E.z,sw=a/m,sh=1/m;
+ E.cx=clamp(E.cx,sw/2,IW-sw/2);E.cy=clamp(E.cy,sh/2,IH-sh/2);
+ if(E.ratio=='o'&&E.z==1&&!PADJ.some(([k])=>E[k])){if(it.url!=it.src)URL.revokeObjectURL(it.url);it.blob=await fetch(it.src).then(r=>r.blob());it.url=it.src;it.ar=it.sar;it.ed=null;return true}
+ const k=Math.min(1,2048/Math.max(sw,sh)),c=document.createElement('canvas');c.width=Math.max(2,Math.round(sw*k));c.height=Math.max(2,Math.round(sh*k));
+ const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,E.cx-sw/2,E.cy-sh/2,sw,sh,0,0,c.width,c.height);
+ if(PADJ.some(([k])=>E[k])){const d=x.getImageData(0,0,c.width,c.height);adjustPx(d,c.width,c.height,E);x.putImageData(d,0,0)}
+ const b=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));if(!b)return false;
+ if(it.url!=it.src)URL.revokeObjectURL(it.url);it.blob=b;it.url=URL.createObjectURL(b);it.ar=c.width/c.height;it.ed=E;return true}
+async function reshape(it,ratio){if(it.t!='image')return;if(!it.src){it.src=it.url;it.sar=it.ar}
+ const im=new Image();im.src=it.src;try{await im.decode()}catch{return}
+ const E=Object.assign({},EDEF,{cx:im.naturalWidth/2,cy:im.naturalHeight/2},it.ed||{},{ratio});await applyEdit(it,im,E)}
 function editPhoto(it,done,cancel){if(!it.src){it.src=it.url;it.sar=it.ar}
  const im=new Image();im.onerror=()=>toast('Could not open that photo.');im.onload=()=>{
   const IW=im.naturalWidth,IH=im.naturalHeight,E=Object.assign({ratio:'o',z:1,cx:IW/2,cy:IH/2,b:0,c:0,s:0,w:0,f:0,v:0,grid:'thirds'},it.ed||{});
@@ -580,18 +592,14 @@ function editPhoto(it,done,cancel){if(!it.src){it.src=it.url;it.sar=it.ar}
   pv.addEventListener('wheel',e=>{e.preventDefault();E.z=clamp(E.z*(1-e.deltaY*.002),1,5);if(tab=='Crop')panel();draw()},{passive:false});
   const close=()=>{removeEventListener('keydown',kd);removeEventListener('resize',size);ov.remove()},kd=e=>{if(e.key=='Escape'){close();cancel&&cancel()}};addEventListener('keydown',kd);addEventListener('resize',size);
   $o('#pc').onclick=()=>{close();cancel&&cancel()};
-  $o('#pd').onclick=async()=>{const g=geom(),same=E.ratio=='o'&&E.z==1&&!PADJ.some(([k])=>E[k]);
-   if(!same){const k=Math.min(1,2048/Math.max(g.sw,g.sh)),c=document.createElement('canvas');c.width=Math.max(2,Math.round(g.sw*k));c.height=Math.max(2,Math.round(g.sh*k));paint(c,g.sx,g.sy,g.sw,g.sh);
-    const b=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));if(!b){toast('Could not save that edit. Try again.');hap('no');return}
-    if(it.url!=it.src)URL.revokeObjectURL(it.url);it.blob=b;it.url=URL.createObjectURL(b);it.ar=c.width/c.height;it.ed=E}
-   else{if(it.url!=it.src)URL.revokeObjectURL(it.url);fetch(it.src).then(r=>r.blob()).then(b=>{it.blob=b});it.url=it.src;it.ar=it.sar;it.ed=null}
+  $o('#pd').onclick=async()=>{geom();if(!await applyEdit(it,im,E)){toast('Could not save that edit. Try again.');hap('no');return}
    close();hap('ok');done()};
   grid();panel();requestAnimationFrame(size)};im.src=it.src}
 /* ---------- camera: slides in from the left of the feed ---------- */
 const CV=h('div','');CV.id='camv';CV.innerHTML='<div class="edge" id="cedge"></div>';document.body.append(CV);
 let camX=0,camFrame=null,camT=0;const camW=()=>innerWidth;
 let camReady=false,camWant=false;
-function camMount(){if(camFrame)return;camFrame=h('iframe');camFrame.title='Camera';camFrame.setAttribute('allow','camera; microphone; fullscreen');camFrame.src='cam/index.html';CV.prepend(camFrame)}
+function camMount(){if(camFrame)return;camFrame=h('iframe');camFrame.title='Camera';camFrame.setAttribute('allow','camera; microphone; fullscreen');camFrame.src='cam/index.html?v=2';CV.prepend(camFrame)}
 const camPost=m=>{try{camFrame&&camFrame.contentWindow.postMessage(m,location.origin)}catch{}};
 function camStart(){camMount();camWant=true;if(camReady)camPost({n0ise:'start'})}
 function camStop(){camWant=false;camPost({n0ise:'stop'})}
