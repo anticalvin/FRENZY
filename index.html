@@ -33,7 +33,7 @@ button{background:none;border:0;cursor:pointer;padding:0}
 #tabs button{position:relative;z-index:2;min-height:44px;padding:0 14px;border-radius:99px;font-size:13px;color:var(--mut);transition:color .25s}
 #tabs button.on{color:var(--fg)}
 #tabs button.plus{font-size:22px;line-height:1;padding:0 16px;color:var(--fg)}
-#ind{position:absolute;top:6px;bottom:6px;left:0;width:60px;border-radius:99px;z-index:1;background:var(--ind);border:1px solid var(--gb);box-shadow:inset 0 1px 0 var(--hi),inset 0 -10px 16px rgba(255,255,255,.06),0 8px 18px rgba(0,0,0,.25);-webkit-backdrop-filter:blur(3px) brightness(1.3) saturate(1.7);backdrop-filter:blur(3px) brightness(1.3) saturate(1.7);pointer-events:none;scale:1;transform-origin:50% 50%;transition:scale .4s var(--sp);will-change:transform,width}
+#ind{box-sizing:border-box;position:absolute;top:6px;bottom:6px;left:0;width:60px;border-radius:99px;z-index:1;background:var(--ind);border:1px solid var(--gb);box-shadow:inset 0 1px 0 var(--hi),inset 0 -10px 16px rgba(255,255,255,.06),0 8px 18px rgba(0,0,0,.25);-webkit-backdrop-filter:blur(3px) brightness(1.3) saturate(1.7);backdrop-filter:blur(3px) brightness(1.3) saturate(1.7);pointer-events:none;scale:1;transform-origin:50% 50%;transition:scale .4s var(--sp);will-change:transform,translate,width}
 #ind::after{content:"";position:absolute;left:12px;right:12px;top:2px;height:42%;border-radius:99px;background:linear-gradient(rgba(255,255,255,.4),rgba(255,255,255,0))}
 :root[data-theme=light] #ind::after{background:linear-gradient(rgba(255,255,255,.9),rgba(255,255,255,0))}
 #tabs.press #ind{scale:1.1 1.2}
@@ -62,7 +62,7 @@ button{background:none;border:0;cursor:pointer;padding:0}
 .dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);transition:.25s var(--sp)}.dots i.on{background:#fff;transform:scale(1.25)}
 .arr{display:none;position:absolute;top:50%;margin-top:-17px;width:34px;height:34px;border-radius:50%;place-items:center;color:#fff;background:rgba(0,0,0,.5);z-index:3}.arr.p{left:8px}.arr.n{right:8px}
 @media(pointer:fine){.cw:hover .arr{display:grid}}
-.p5{background:radial-gradient(circle at 30% 20%,#2a2a2a,#0a0a0a);position:relative;overflow:hidden}
+.p5{background:#0a0a0a;position:relative;overflow:hidden}
 .p5:empty::after{content:"p5";position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.25);font:600 18px ui-monospace,monospace}
 .p5 iframe{border:0;width:100%;height:100%;display:block;pointer-events:none}.p5.act iframe{pointer-events:auto}
 /* sheets */
@@ -182,13 +182,13 @@ function windowResized(){resizeCanvas(windowWidth,windowHeight);background(10)}`
 Pulse:`function setup(){createCanvas(windowWidth,windowHeight)}
 function draw(){background(245);noStroke();const n=9,s=width/n,m=ceil(height/s);for(let i=0;i<n;i++)for(let j=0;j<m;j++){fill(20);circle(i*s+s/2,j*s+s/2,s*.8*abs(sin(dist(i,j,n/2,m/2)*.6-frameCount*.05)))}}
 function windowResized(){resizeCanvas(windowWidth,windowHeight)}`};
-const p5doc=c=>`<!doctype html><html><head><meta name="viewport" content="width=device-width"><style>html,body{margin:0;overflow:hidden;background:#000}canvas{display:block}</style><script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"><\/script></head><body><script>window.onerror=function(m){document.body.style.cssText='color:#f66;font:12px monospace;padding:10px';document.body.textContent=m};${String(c).replace(/<\/script/gi,'<\\/script')}<\/script></body></html>`;
+const p5doc=c=>`<!doctype html><html><head><meta name="viewport" content="width=device-width"><style>html,body{margin:0;height:100%;overflow:hidden;background:#000}canvas{display:block;width:100%!important;height:100%!important;object-fit:cover}</style><script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"><\/script></head><body><script>window.onerror=function(m){document.body.style.cssText='color:#f66;font:12px monospace;padding:10px';document.body.textContent=m};${String(c).replace(/<\/script/gi,'<\\/script')}\n;if(typeof window.windowResized!=='function')window.windowResized=function(){if(typeof resizeCanvas==='function')resizeCanvas(windowWidth,windowHeight)};<\/script></body></html>`;
 function setLive(d,on){if(on&&!d.firstChild){const f=h('iframe');f.setAttribute('sandbox','allow-scripts');f.title='p5 sketch';f.srcdoc=p5doc(d.dataset.code);d.append(f)}else if(!on&&d.firstChild)d.innerHTML=''}
 const lazy=new IntersectionObserver(es=>es.forEach(e=>{const t=e.target;if(t.classList.contains('p5'))setLive(t,e.isIntersecting);else if(t.tagName=='VIDEO'){if(e.isIntersecting)t.play().catch(()=>{});else t.pause()}}),{rootMargin:'80px'});
 /* ---------- data ---------- */
 const state=ls.get('st',{l:{},s:{},c:{}});const save=()=>ls.set('st',state);
 const DB=[{k:'bio',on:1},{k:'stats',on:1},{k:'now',on:1},{k:'links',on:1},{k:'work',on:1},{k:'more',on:1}];
-const DEF={name:'CK',handle:'ck',bio:'Creative technologist making music, generative art and strange interfaces. Based wherever the signal is good.',avail:'Open for commissions',making:'A glass-and-grain series',listening:'Slow ambient on repeat',at:'The studio',links:[{l:'Site',u:'#'},{l:'Bandcamp',u:'#'},{l:'Are.na',u:'#'}],layout:'drum',font:'grotesk',accent:'#ffffff',hide:false,banner:'art',bannerImg:'',bannerColor:'#222222',avatarImg:'',shape:'circle',bg:'',align:'left',blocks:DB};
+const DEF={name:'CK',handle:'ck',bio:'Creative technologist making music, generative art and strange interfaces. Based wherever the signal is good.',avail:'Open for commissions',making:'A glass-and-grain series',listening:'Slow ambient on repeat',at:'The studio',links:[{l:'Site',u:'#'},{l:'Bandcamp',u:'#'},{l:'Are.na',u:'#'}],layout:'explore',font:'grotesk',accent:'#ffffff',hide:false,banner:'art',bannerImg:'',bannerColor:'#222222',avatarImg:'',shape:'circle',bg:'',align:'left',blocks:DB};
 const baseMe=()=>{const m=Object.assign({},DEF,ls.get('me',{}));DB.forEach(d=>{if(!m.blocks.find(b=>b.k==d.k))m.blocks.push({...d})});return m};
 const blankMe=()=>({...DEF,name:'',handle:'',bio:'',making:'',listening:'',at:'',links:[],blocks:DB.map(d=>({...d})),onboarded:false});
 let me=baseMe();
@@ -302,7 +302,7 @@ async function saveProfile(){if(!online||!user)return true;
  try{if(me.avatarImg&&me.avatarImg.startsWith('data:'))me.avatarImg=await upData(me.avatarImg,'avatar.jpg');if(me.bannerImg&&me.bannerImg.startsWith('data:'))me.bannerImg=await upData(me.bannerImg,'banner.jpg');
   const s={...me};['name','handle','bio','avatarImg','verified','counts'].forEach(k=>delete s[k]);
   const r=await sb.from('profiles').update({display_name:me.name,username:me.handle.toLowerCase().replace(/[^a-z0-9_.]/g,'').slice(0,30),bio:me.bio,avatar_url:me.avatarImg||null,settings:s}).eq('id',user.id);if(r.error)throw r.error;return true}
- catch(e){toast(/duplicate|unique/i.test(e.message||'')?'That handle is taken':'Could not sync profile');return false}}
+ catch(e){toast(/duplicate|unique/i.test(e.message||'')?'That handle is taken':'Could not save profile: '+(e.message||'try again'));return false}}
 const AMSG={'Invalid login credentials':'That email and password don’t match, or the email isn’t confirmed yet.','Email not confirmed':'Confirm your email first. Check your inbox, then sign in.','User already registered':'That email already has an account. Sign in instead.'};
 function authSheet(msg,mode='in'){if(!online){const w=h('div','',`<h3>Can’t reach vzn cloud</h3><p class="mut" style="line-height:1.5">${esc(cloudErr||'The connection failed')}. Check your network and try again. Your work stays saved on this device.</p><button class="pill on big" id="rt">Try again</button><div class="mut" id="am" role="status" style="text-align:center;min-height:20px"></div>`);const o=sheet(w);
   $('#rt',w).onclick=async()=>{$('#am',w).textContent='Connecting…';await sbInit();if(online){o.remove();await loadProfile();await loadRemote();renderAll();authSheet(msg,mode)}else $('#am',w).textContent='Still offline: '+cloudErr};return}
@@ -470,6 +470,7 @@ function tint(el,bg){const ks=['--bg','--fg','--mut','--gl','--gb','--hi'];if(!b
  const d=lum(bg)<.5;el.style.setProperty('--bg',bg);el.style.setProperty('--fg',d?'#fff':'#000');el.style.setProperty('--mut',d?'rgba(255,255,255,.55)':'rgba(0,0,0,.5)');el.style.setProperty('--gl',d?'rgba(255,255,255,.1)':'rgba(255,255,255,.55)');el.style.setProperty('--gb',d?'rgba(255,255,255,.2)':'rgba(0,0,0,.12)');el.style.background=bg;el.style.color=d?'#fff':'#000'}
 const RAD={circle:'50%',squircle:'34%',square:'10px'};
 function applyMe(){const r=document.documentElement;r.style.setProperty('--ac',me.accent);r.style.setProperty('--fh',FONTS[me.font]);if(me.font!='grotesk')r.style.setProperty('--f',FONTS[me.font]);else r.style.removeProperty('--f')}
+function masonryOf(list){const cols=innerWidth<700?2:3,cs=Array.from({length:cols},()=>h('div','mc')),hs=Array(cols).fill(0);list.forEach(p=>{const i=hs.indexOf(Math.min(...hs));hs[i]+=1/(p.ar||.8)+.03;cs[i].append(tile(p))});const m=h('div','mas');m.append(...cs);return m}
 function renderMe(){const v=$('#me');v.innerHTML='';tint(v,me.bg);const mine=P.filter(p=>p.mine),w=h('div','pf'+(me.align=='center'?' ctr':''));
  const hasB=me.banner!='none';
  if(hasB){const b=h('div','bn');b.style.background=me.banner=='image'&&me.bannerImg?`url("${me.bannerImg}") center/cover`:me.banner=='color'?me.bannerColor:`url("${art(99+me.name.length,2.2)}") center/cover`;v.append(b)}
@@ -481,19 +482,20 @@ function renderMe(){const v=$('#me');v.innerHTML='';tint(v,me.bg);const mine=P.f
   now:()=>(!me.making&&!me.listening&&!me.at)?null:h('div','now glass',`<span>Making</span><div>${esc(me.making)}</div><span>Listening</span><div>${esc(me.listening)}</div><span>At</span><div>${esc(me.at)}</div>`),
   links:()=>{if(!me.links.length)return null;const l=h('div','lk');me.links.forEach(x=>{const a=h('a','glass pill',esc(x.l));a.href=x.u||'#';a.style.cssText='color:inherit;text-decoration:none';l.append(a)});return l},
   work:()=>{const wk=h('div','work');if(!mine.length){wk.innerHTML='<p class="mut" style="padding:0 16px">Post something and it shows up here.</p>';return wk}
-   if(me.layout=='drum'){const d=h('div','pdrum');wk.append(d);Drum(d,mine,openPost,true)}
-   else{const g=h('div',me.layout=='grid'?'grid':me.layout=='contact'?'contact':'mosaic');mine.forEach((p,i)=>{const c=h('div','g');c.append(media({items:[p.items[0]]},{still:true}));if(me.layout=='contact')c.append(h('i','',String(i+1).padStart(2,'0')+'A'));c.onclick=()=>openPost(p);g.append(c)});wk.append(g)}return wk},
-  more:()=>{const box=h('div'),sec=h('div','sec'),body=h('div');let cur='Posts';
+   const lay=me.layout=='drum'||!me.layout?'explore':me.layout;
+   if(lay=='explore')wk.append(masonryOf(mine));
+   else{const g=h('div',lay=='grid'?'grid':lay=='contact'?'contact':'mosaic');mine.forEach((p,i)=>{const c=h('div','g');c.append(media({items:[p.items[0]]},{still:true}));if(lay=='contact')c.append(h('i','',String(i+1).padStart(2,'0')+'A'));c.onclick=()=>openPost(p);g.append(c)});wk.append(g)}return wk},
+  more:()=>{const box=h('div'),sec=h('div','sec'),body=h('div');const hasW=me.blocks.some(b=>b.k=='work'&&b.on),TB=hasW?['Boards','Saved','About']:['Posts','Boards','Saved','About'];let cur=TB[0];
    const show=()=>{$$('button',sec).forEach(b=>b.classList.toggle('on',b.textContent==cur));body.innerHTML='';
     if(cur=='Posts'){const g=h('div','grid');g.style.margin='0 -16px';mine.forEach(p=>{const c=h('div','g');c.append(media({items:[p.items[0]]},{still:true}));c.onclick=()=>openPost(p);g.append(c)});body.append(g)}
     if(cur=='Saved'){const sv=P.filter(p=>state.s[p.id]);if(!sv.length)body.innerHTML='<p class="mut">Only you see this. Save a post and it shows up here.</p>';else{const g=h('div','grid');g.style.margin='0 -16px';sv.forEach(p=>{const c=h('div','g');c.append(media({items:[p.items[0]]},{still:true}));c.onclick=()=>openPost(p);g.append(c)});body.append(g)}}
     if(cur=='Boards'&&online&&user)drawBoards(body);
     else if(cur=='Boards')[['Quiet colour','series'],['Gear & process','process'],['Film','film']].forEach(([n,t])=>{const ps=P.filter(p=>p.tags.includes(t)).slice(0,3);body.append(h('div','board',ps.map(p=>`<img src="${thumb(p)}" alt="">`).join('')+`<div><b>${n}</b><div class="mut">${ps.length} pieces</div></div>`))});
     if(cur=='About')body.innerHTML=`<p style="line-height:1.5">${esc(me.bio)}</p><p class="mut">Shows: Low Light, 2026 · Signal/Noise group show, 2025<br>Press: Frame Quarterly, Index Mag<br>Collaborators: ${others.join(', ')}</p>`};
-   ['Posts','Boards','Saved','About'].forEach(n=>{const b=h('button','glass pill',n);b.onclick=()=>{cur=n;show()};sec.append(b)});show();box.append(sec,body);return box}};
+   TB.forEach(n=>{const b=h('button','glass pill',n);b.onclick=()=>{cur=n;show()};sec.append(b)});show();box.append(sec,body);return box}};
  me.blocks.forEach(b=>{if(!b.on)return;const e=B[b.k]();if(e)w.append(e)});v.append(w)}
 const down=(f,m)=>new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,m/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(i.src);r(c.toDataURL('image/jpeg',.82))};i.src=URL.createObjectURL(f)});
-function editMe(){const f=h('div','');const sw=['#ffffff','#ff4d2e','#3d7bff','#19c37d','#ffd400','#c06bff'];const E=JSON.parse(JSON.stringify(me));
+function editMe(){const f=h('div','');const sw=['#ffffff','#ff4d2e','#3d7bff','#19c37d','#ffd400','#c06bff'];const E=JSON.parse(JSON.stringify(me));if(!E.layout||E.layout=='drum')E.layout='explore';
  f.innerHTML=`<h3>Make it yours</h3><div class="mut">${online?(user?'Synced to vzn cloud':'Cloud connected · sign in to sync'):'Saved on this device'}</div>
  <label class="k">Photo</label><div class="row"><label class="glass pill" style="cursor:pointer">Upload photo<input type="file" accept="image/*" id="avf"></label><div id="sh"></div></div>
  <label class="k">Name</label><input id="n" value="${esc(me.name)}"><label class="k">Handle</label><input id="hd" value="${esc(me.handle)}"><label class="k">Bio</label><textarea id="b">${esc(me.bio)}</textarea>
@@ -510,7 +512,7 @@ function editMe(){const f=h('div','');const sw=['#ffffff','#ff4d2e','#3d7bff','#
  const o=sheet(f);$('#av',f).value=me.avail;
  const chips=(id,opts,key)=>{const c=$(id,f),r=()=>{c.innerHTML='';opts.forEach(([k,t])=>{const b=h('button','glass pill'+(E[key]==k?' on':''),t);b.onclick=()=>{E[key]=k;r();ex()};c.append(b)})};r()};
  chips('#sh',[['circle','Circle'],['squircle','Soft'],['square','Square']],'shape');chips('#bn',[['none','None'],['art','Art'],['image','Photo'],['color','Colour']],'banner');
- chips('#al',[['left','Left'],['center','Centre']],'align');chips('#ly',[['drum','Drum'],['grid','Grid'],['contact','Contact sheet'],['mosaic','Mosaic']],'layout');chips('#fn',[['grotesk','Grotesk'],['editorial','Editorial'],['mono','Mono']],'font');
+ chips('#al',[['left','Left'],['center','Centre']],'align');chips('#ly',[['explore','Explore'],['grid','Grid'],['contact','Contact sheet'],['mosaic','Mosaic']],'layout');chips('#fn',[['grotesk','Grotesk'],['editorial','Editorial'],['mono','Mono']],'font');
  const ex=()=>{const x=$('#bx',f);x.innerHTML='';if(E.banner=='image'){const l=h('label','glass pill','Upload banner<input type="file" accept="image/*">');l.style.cursor='pointer';$('input',l).onchange=async e=>{E.bannerImg=await down(e.target.files[0],1000);toast('Banner set')};x.append(l)}
   if(E.banner=='color'){const c=h('input');c.type='color';c.value=E.bannerColor;c.oninput=()=>E.bannerColor=c.value;x.append(c)}};ex();
  const bg=$('#bgr',f),rb=()=>{bg.innerHTML='';const d=h('button','glass pill'+(!E.bg?' on':''),'Default');d.onclick=()=>{E.bg='';rb()};const c=h('input');c.type='color';c.value=E.bg||'#111111';c.oninput=()=>{E.bg=c.value;[...bg.children].forEach(x=>x.classList.remove('on'))};bg.append(d,c)};rb();
@@ -527,10 +529,10 @@ const tbs=()=>$$('#tabs [data-v]'),tabBox=v=>{const b=tbs().find(x=>x.dataset.v=
 function aim(l,r,f){tL=l;tR=r;fast=!!f;if(!sRaf)sRaf=requestAnimationFrame(stepS)}
 function stepS(t){const dt=Math.min(2.2,(t-(lastT||t))/16.7||1);lastT=t;const right=(tL+tR)>(eL+eR),m=fast?1.6:1,kl=(right?.085:.21)*m,kr=(right?.21:.085)*m,c=Math.pow(.77,dt);
  vL=(vL+(tL-eL)*kl*dt)*c;vR=(vR+(tR-eR)*kr*dt)*c;eL+=vL*dt;eR+=vR*dt;
- const W=tabs.clientWidth,L=Math.max(3,eL),Rr=Math.min(W-3,eR),w=Math.max(30,Rr-L),base=tR-tL,sq=clamp((w-base)/Math.max(40,base)*.22,-.05,.14);
- ind.style.transform=`translateX(${L}px) scaleY(${1-sq})`;ind.style.width=w+'px';
- if(Math.abs(vL)+Math.abs(vR)>.03||Math.abs(tL-eL)+Math.abs(tR-eR)>.3)sRaf=requestAnimationFrame(stepS);else{eL=tL;eR=tR;vL=vR=0;ind.style.transform=`translateX(${eL}px)`;ind.style.width=(eR-eL)+'px';sRaf=0;lastT=0}}
-function snapInd(v){const[l,r]=tabBox(v);eL=tL=l;eR=tR=r;vL=vR=0;ind.style.transform=`translateX(${l}px)`;ind.style.width=(r-l)+'px'}
+ const W=tabs.clientWidth,w0=Math.max(30,eR-eL),pad=3+(tabs.classList.contains('press')?w0*.05:0),L=Math.max(pad,eL),Rr=Math.min(W-pad,eR),w=Math.max(30,Rr-L),base=tR-tL,sq=clamp((w-base)/Math.max(40,base)*.22,-.05,.14);
+ ind.style.translate=L+'px 0';ind.style.transform=`scaleY(${1-sq})`;ind.style.width=w+'px';
+ if(Math.abs(vL)+Math.abs(vR)>.03||Math.abs(tL-eL)+Math.abs(tR-eR)>.3)sRaf=requestAnimationFrame(stepS);else{eL=tL;eR=tR;vL=vR=0;ind.style.translate=eL+'px 0';ind.style.transform='none';ind.style.width=(eR-eL)+'px';sRaf=0;lastT=0}}
+function snapInd(v){const[l,r]=tabBox(v);eL=tL=l;eR=tR=r;vL=vR=0;ind.style.translate=l+'px 0';ind.style.transform='none';ind.style.width=(r-l)+'px'}
 function go2(v){if(v!=curV)hap('m');curV=v;$$('.view').forEach(x=>x.classList.toggle('on',x.id==v));tbs().forEach(b=>b.classList.toggle('on',b.dataset.v==v));const[l,r]=tabBox(v);aim(l,r,false);$('#top').style.display=v=='feed'?'flex':'none';
  if(v=='feed'||v=='explore')ls.set('view',v);if(v=='explore')renderExplore();if(v=='act')renderAct();if(v=='me')renderMe()}
 let tdrag=false,tx0=0,tlast=0,hov=null;
