@@ -112,7 +112,7 @@ label.k{display:block;font-size:12px;color:var(--mut);margin-top:12px}
 .stats{display:flex;gap:22px;margin:14px 0;font-size:14px}.stats b{display:block;font-size:20px;letter-spacing:-.03em}
 .now{border-radius:22px;padding:14px 16px;margin:14px 0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}.now span{color:var(--mut)}
 .ctr{text-align:center}.ctr .av{margin:0 auto}.ctr .row,.ctr .lk,.ctr .stats{justify-content:center}.ctr .bio{margin-left:auto;margin-right:auto}.ctr .now{text-align:left}
-.work{margin:18px -16px}
+.work{margin:18px -16px}.pinl{padding:0 16px;margin:0 0 8px}.pins{display:flex;gap:8px;overflow-x:auto;padding:0 16px 14px;scrollbar-width:none;scroll-snap-type:x mandatory}.pin{flex:0 0 72%;aspect-ratio:4/5;border-radius:18px;overflow:hidden;scroll-snap-align:center;cursor:pointer;background:#111}.pin>*{width:100%;height:100%;object-fit:cover}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
 .g{aspect-ratio:1;overflow:hidden;cursor:pointer;background:#222;position:relative}.g>*:not(i){width:100%;height:100%;object-fit:cover;display:block}
 .contact{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px;background:#111;border-radius:14px;margin:0 16px}
@@ -188,7 +188,7 @@ const lazy=new IntersectionObserver(es=>es.forEach(e=>{const t=e.target;if(t.cla
 /* ---------- data ---------- */
 const state=ls.get('st',{l:{},s:{},c:{}});const save=()=>ls.set('st',state);
 const DB=[{k:'bio',on:1},{k:'stats',on:1},{k:'now',on:1},{k:'links',on:1},{k:'work',on:1},{k:'more',on:1}];
-const DEF={name:'CK',handle:'ck',bio:'Creative technologist making music, generative art and strange interfaces. Based wherever the signal is good.',avail:'Open for commissions',making:'A glass-and-grain series',listening:'Slow ambient on repeat',at:'The studio',links:[{l:'Site',u:'#'},{l:'Bandcamp',u:'#'},{l:'Are.na',u:'#'}],layout:'explore',font:'grotesk',accent:'#ffffff',hide:false,banner:'art',bannerImg:'',bannerColor:'#222222',avatarImg:'',shape:'circle',bg:'',align:'left',blocks:DB};
+const DEF={name:'CK',handle:'ck',bio:'Creative technologist making music, generative art and strange interfaces. Based wherever the signal is good.',avail:'Open for commissions',making:'A glass-and-grain series',listening:'Slow ambient on repeat',at:'The studio',links:[{l:'Site',u:'#'},{l:'Bandcamp',u:'#'},{l:'Are.na',u:'#'}],layout:'explore',contactLabel:'Commission',contact:'',pins:[],font:'grotesk',accent:'#ffffff',hide:false,banner:'art',bannerImg:'',bannerColor:'#222222',avatarImg:'',shape:'circle',bg:'',align:'left',blocks:DB};
 const baseMe=()=>{const m=Object.assign({},DEF,ls.get('me',{}));DB.forEach(d=>{if(!m.blocks.find(b=>b.k==d.k))m.blocks.push({...d})});return m};
 const blankMe=()=>({...DEF,name:'',handle:'',bio:'',making:'',listening:'',at:'',links:[],blocks:DB.map(d=>({...d})),onboarded:false});
 let me=baseMe();
@@ -476,12 +476,15 @@ function renderMe(){const v=$('#me');v.innerHTML='';tint(v,me.bg);const mine=P.f
  if(hasB){const b=h('div','bn');b.style.background=me.banner=='image'&&me.bannerImg?`url("${me.bannerImg}") center/cover`:me.banner=='color'?me.bannerColor:`url("${art(99+me.name.length,2.2)}") center/cover`;v.append(b)}
  const hd=h('div','ph'+(hasB?' hb':''));hd.innerHTML=`<div class="av" style="border-radius:${RAD[me.shape]}"><img src="${me.avatarImg||av(me.name)}" alt=""></div><h1 class="nm">${esc(me.name)}${me.verified?VBADGE:''}</h1><div class="mut">@${esc(me.handle)}</div>`;
  const ar=h('div','row'),eb=h('button','pill on','Edit profile'),sb2=h('button','glass pill','Share');eb.onclick=editMe;sb2.onclick=()=>{try{navigator.clipboard.writeText(user?location.origin+location.pathname+'#/u/'+me.handle:location.href)}catch{}toast('Profile link copied')};ar.append(eb,sb2);
+ if(me.contact){const ct=h('a','pill on',esc(me.contactLabel||'Contact'));ct.href=/^[^@\s]+@[^@\s]+$/.test(me.contact)?'mailto:'+me.contact:me.contact;ct.style.textDecoration='none';ar.prepend(ct)}
  if(!user){const si=h('button','glass pill','Sign in');si.onclick=()=>authSheet();ar.append(si)}hd.append(ar);w.append(hd);
  const B={bio:()=>h('div','',`<span class="glass pill"><i class="dot"></i>${esc(me.avail)}</span><p class="bio">${esc(me.bio)}</p>`),
   stats:()=>me.hide?null:h('div','stats',online&&user&&me.counts?`<div><b>${mine.length}</b>Posts</div><div><b>${me.counts.f}</b>Followers</div><div><b>${me.counts.g}</b>Following</div>`:online?`<div><b>${mine.length}</b>Posts</div>`:`<div><b>${mine.length}</b>Posts</div><div><b>2.4k</b>Followers</div><div><b>318</b>Following</div>`),
   now:()=>(!me.making&&!me.listening&&!me.at)?null:h('div','now glass',`<span>Making</span><div>${esc(me.making)}</div><span>Listening</span><div>${esc(me.listening)}</div><span>At</span><div>${esc(me.at)}</div>`),
   links:()=>{if(!me.links.length)return null;const l=h('div','lk');me.links.forEach(x=>{const a=h('a','glass pill',esc(x.l));a.href=x.u||'#';a.style.cssText='color:inherit;text-decoration:none';l.append(a)});return l},
   work:()=>{const wk=h('div','work');if(!mine.length){wk.innerHTML='<p class="mut" style="padding:0 16px">Post something and it shows up here.</p>';return wk}
+   const pn=(me.pins||[]).map(id=>mine.find(p=>p.id==id)).filter(Boolean);
+   if(pn.length){const ps=h('div','pins');pn.forEach(p=>{const c=h('div','pin');c.append(media({items:[p.items[0]]},{still:true}));c.onclick=()=>openPost(p);ps.append(c)});wk.append(h('div','k pinl','Pinned'),ps)}
    const lay=me.layout=='drum'||!me.layout?'explore':me.layout;
    if(lay=='explore')wk.append(masonryOf(mine));
    else{const g=h('div',lay=='grid'?'grid':lay=='contact'?'contact':'mosaic');mine.forEach((p,i)=>{const c=h('div','g');c.append(media({items:[p.items[0]]},{still:true}));if(lay=='contact')c.append(h('i','',String(i+1).padStart(2,'0')+'A'));c.onclick=()=>openPost(p);g.append(c)});wk.append(g)}return wk},
@@ -502,6 +505,9 @@ function editMe(){const f=h('div','');const sw=['#ffffff','#ff4d2e','#3d7bff','#
  <label class="k">Status</label><select id="av"><option>Open for commissions</option><option>Booked, taking waitlist</option><option>On a break</option><option>Collaborating</option></select>
  <label class="k">Now: making</label><input id="mk" value="${esc(me.making)}"><label class="k">Now: listening</label><input id="li" value="${esc(me.listening)}"><label class="k">Now: at</label><input id="at" value="${esc(me.at)}">
  <label class="k">Links, one per line as Label | URL</label><textarea id="lks">${me.links.map(l=>l.l+' | '+l.u).join('\n')}</textarea>
+ <label class="k">Contact button label</label><input id="ctl" value="${esc(me.contactLabel||'')}" placeholder="Commission"><label class="k">Contact email or link</label><input id="ctu" value="${esc(me.contact||'')}" placeholder="you@example.com">
+ <label class="k">Pinned work, up to 3</label><div class="row" id="pn" style="overflow-x:auto;flex-wrap:nowrap"></div>
+ <label class="k">Theme</label><div class="row" id="th"></div>
  <label class="k">Banner</label><div class="row" id="bn"></div><div class="row" id="bx"></div>
  <label class="k">Page colour</label><div class="row" id="bgr"></div>
  <label class="k">Align</label><div class="row" id="al"></div><label class="k">Work layout</label><div class="row" id="ly"></div><label class="k">Type</label><div class="row" id="fn"></div><label class="k">Accent</label><div class="row" id="sw"></div>
@@ -510,9 +516,12 @@ function editMe(){const f=h('div','');const sw=['#ffffff','#ff4d2e','#3d7bff','#
  <label class="k"><input type="checkbox" id="hp" style="width:auto;margin-right:8px" ${HAP?'checked':''}>Haptic feedback</label>
  <button class="pill on big" id="sv">Save</button>${user?'<button class="glass pill big" id="so">Sign out</button>':''}`;
  const o=sheet(f);$('#av',f).value=me.avail;
- const chips=(id,opts,key)=>{const c=$(id,f),r=()=>{c.innerHTML='';opts.forEach(([k,t])=>{const b=h('button','glass pill'+(E[key]==k?' on':''),t);b.onclick=()=>{E[key]=k;r();ex()};c.append(b)})};r()};
+ const RC=[],chips=(id,opts,key)=>{const c=$(id,f),r=()=>{c.innerHTML='';opts.forEach(([k,t])=>{const b=h('button','glass pill'+(E[key]==k?' on':''),t);b.onclick=()=>{E[key]=k;r();ex()};c.append(b)})};RC.push(r);r()};
  chips('#sh',[['circle','Circle'],['squircle','Soft'],['square','Square']],'shape');chips('#bn',[['none','None'],['art','Art'],['image','Photo'],['color','Colour']],'banner');
  chips('#al',[['left','Left'],['center','Centre']],'align');chips('#ly',[['explore','Explore'],['grid','Grid'],['contact','Contact sheet'],['mosaic','Mosaic']],'layout');chips('#fn',[['grotesk','Grotesk'],['editorial','Editorial'],['mono','Mono']],'font');
+ const pn=$('#pn',f),rp=()=>{pn.innerHTML='';const mp=P.filter(p=>p.mine);if(!mp.length){pn.innerHTML='<span class="mut">Post something to pin it.</span>';return}E.pins=E.pins||[];mp.forEach(p=>{const b=h('button','pk'+(E.pins.includes(p.id)?' on':''));b.style.cssText='flex:none;width:56px;height:56px;min-height:44px;border-radius:12px;overflow:hidden;padding:0;border:2px solid '+(E.pins.includes(p.id)?'var(--fg)':'transparent');b.append(media({items:[p.items[0]]},{still:true}));b.onclick=()=>{const i=E.pins.indexOf(p.id);if(i>=0)E.pins.splice(i,1);else if(E.pins.length<3)E.pins.push(p.id);else{toast('Pin up to 3');hap('no');return}rp()};pn.append(b)})};rp();
+ const TH=[['Default',{bg:'',accent:'#ffffff',font:'grotesk'}],['Paper',{bg:'#f4f1ea',accent:'#111111',font:'editorial'}],['Ink',{bg:'#0b0b0b',accent:'#ffffff',font:'grotesk'}],['Terminal',{bg:'#000000',accent:'#19c37d',font:'mono'}],['Clay',{bg:'#2a1f1a',accent:'#ff4d2e',font:'editorial'}]];
+ const th=$('#th',f);TH.forEach(([n,v])=>{const b=h('button','glass pill',n);b.onclick=()=>{Object.assign(E,v);rb();rs();RC.forEach(r=>r());hap('tap')};th.append(b)});
  const ex=()=>{const x=$('#bx',f);x.innerHTML='';if(E.banner=='image'){const l=h('label','glass pill','Upload banner<input type="file" accept="image/*">');l.style.cursor='pointer';$('input',l).onchange=async e=>{E.bannerImg=await down(e.target.files[0],1000);toast('Banner set')};x.append(l)}
   if(E.banner=='color'){const c=h('input');c.type='color';c.value=E.bannerColor;c.oninput=()=>E.bannerColor=c.value;x.append(c)}};ex();
  const bg=$('#bgr',f),rb=()=>{bg.innerHTML='';const d=h('button','glass pill'+(!E.bg?' on':''),'Default');d.onclick=()=>{E.bg='';rb()};const c=h('input');c.type='color';c.value=E.bg||'#111111';c.oninput=()=>{E.bg=c.value;[...bg.children].forEach(x=>x.classList.remove('on'))};bg.append(d,c)};rb();
@@ -521,7 +530,7 @@ function editMe(){const f=h('div','');const sw=['#ffffff','#ff4d2e','#3d7bff','#
  const NM={bio:'Bio and status',stats:'Counts',now:'Now',links:'Links',work:'Work',more:'Feed, boards, about'},bl=$('#bl',f),rbl=()=>{bl.innerHTML='';E.blocks.forEach((b,i)=>{const r=h('div','br glass',`<span>${NM[b.k]}</span>`),mk=(t,fn)=>{const x=h('button','',t);x.onclick=fn;return x};
   r.append(mk('↑',()=>{if(i){[E.blocks[i-1],E.blocks[i]]=[E.blocks[i],E.blocks[i-1]];rbl()}}),mk('↓',()=>{if(i<E.blocks.length-1){[E.blocks[i+1],E.blocks[i]]=[E.blocks[i],E.blocks[i+1]];rbl()}}),Object.assign(mk(b.on?'Shown':'Hidden',()=>{b.on=b.on?0:1;rbl()}),{className:'ey'}));bl.append(r)})};rbl();
  if(user)$('#so',f).onclick=async()=>{await sb.auth.signOut();o.remove();toast('Signed out')};
- $('#sv',f).onclick=async()=>{const prev=me;Object.assign(E,{name:$('#n',f).value||'You',handle:($('#hd',f).value||'me').toLowerCase().replace(/[^a-z0-9_.]/g,''),bio:$('#b',f).value,avail:$('#av',f).value,making:$('#mk',f).value,listening:$('#li',f).value,at:$('#at',f).value,links:$('#lks',f).value.split('\n').filter(Boolean).map(s=>{const[a,...u]=s.split('|');return{l:a.trim(),u:u.join('|').trim()}}),hide:$('#hs',f).checked});
+ $('#sv',f).onclick=async()=>{const prev=me;Object.assign(E,{name:$('#n',f).value||'You',handle:($('#hd',f).value||'me').toLowerCase().replace(/[^a-z0-9_.]/g,''),bio:$('#b',f).value,avail:$('#av',f).value,making:$('#mk',f).value,listening:$('#li',f).value,at:$('#at',f).value,links:$('#lks',f).value.split('\n').filter(Boolean).map(s=>{const[a,...u]=s.split('|');return{l:a.trim(),u:u.join('|').trim()}}),hide:$('#hs',f).checked,contactLabel:$('#ctl',f).value.trim()||'Commission',contact:$('#ctu',f).value.trim()});
   HAP=$('#hp',f).checked;ls.set('hap',HAP);me=E;const ok=await saveProfile();if(!ok){me=prev;return}if(!user)ls.set('me',me);applyMe();o.remove();renderMe();toast('Saved');hap('ok')}}
 /* ---------- nav + liquid indicator (two-edge spring) ---------- */
 const tabs=$('#tabs'),ind=$('#ind');let eL=0,eR=60,vL=0,vR=0,tL=0,tR=60,sRaf=0,lastT=0,fast=false,curV='feed';
