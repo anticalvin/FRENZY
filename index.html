@@ -68,12 +68,12 @@ button{background:none;border:0;cursor:pointer;padding:0}
 /* sheets */
 .ov{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.4)}
 @keyframes fade{from{opacity:0}}@keyframes up{from{transform:translateY(60px) scale(.96);opacity:0}}
-.sh{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);transform:translateX(-50%);width:min(560px,calc(100vw - 20px));max-height:88vh;border-radius:32px;overflow:hidden;display:flex;flex-direction:column;background:color-mix(in srgb,var(--bg) 80%,transparent)}.scr{overflow-y:auto;padding:22px 20px 24px;flex:1;min-height:0}
-.sh h3{margin:0 0 14px;font-family:var(--fh);font-size:22px;letter-spacing:-.03em}
+.sh{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);transform:translateX(-50%);width:min(560px,calc(100vw - 20px));max-height:88vh;max-height:min(88dvh,calc(var(--vvh,100dvh) - 20px));border-radius:32px;overflow:hidden;display:flex;flex-direction:column;background:color-mix(in srgb,var(--bg) 80%,transparent)}.scr{overflow-y:auto;padding:22px 20px 24px;flex:1;min-height:0}
+.pst[hidden]{display:none}.sh h3{margin:0 0 14px;font-family:var(--fh);font-size:22px;letter-spacing:-.03em}
 .vw .scr{padding:0;display:flex;flex-direction:column;overflow:hidden}.vwi{display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden}
-.dz{touch-action:pan-x;padding:0 14px 10px;cursor:grab}.grab{height:30px;display:flex;justify-content:center;align-items:center;position:relative}.grab::before{content:"";width:40px;height:5px;border-radius:9px;background:var(--mut);opacity:.6}
+.sh.vw{height:min(calc(var(--vvh,100dvh) - env(safe-area-inset-top,0px) - 24px),920px);max-height:none}.dz{touch-action:pan-x;padding:0 14px 10px;cursor:grab;flex:0 0 60%;min-height:0;display:flex;flex-direction:column}.stg{flex:1;min-height:0;container-type:size;display:grid;place-items:center}.grab{height:30px;display:flex;justify-content:center;align-items:center;position:relative}.grab::before{content:"";width:40px;height:5px;border-radius:9px;background:var(--mut);opacity:.6}
 .grab button{position:absolute;right:0;top:2px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px;background:var(--gl)}
-.vf{margin:0 auto;border-radius:20px;overflow:hidden;background:#111;position:relative}
+.vf>*{width:100%;height:100%}.vf img,.vf video{object-fit:contain}.vf{width:min(100cqw,calc(100cqh*var(--ar)));aspect-ratio:var(--ar);border-radius:20px;overflow:hidden;background:#111;position:relative}
 .vi{padding:6px 20px calc(env(safe-area-inset-bottom,0px) + 24px);overflow-y:auto;flex:1}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .mut{color:var(--mut);font-size:13px}
@@ -139,7 +139,7 @@ label.k{display:block;font-size:12px;color:var(--mut);margin-top:12px}
 </nav>
 <script>
 /* ============ CONFIG: paste your Supabase publishable (anon) key to go live ============ */
-const VZN={url:'https://cjtcuiouulnqcxjfhncs.supabase.co',key:''};
+const VZN={url:'https://cjtcuiouulnqcxjfhncs.supabase.co',key:'sb_publishable_-gIBv8RPKjEXrxljzAgU5w_fSjLRf_-'};
 /* ======================================================================================== */
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const h=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.innerHTML=x;return e};
@@ -256,6 +256,8 @@ function renderFeed(){const f=$('#feed');f.innerHTML='';$('#mode').textContent=m
  else{const w=h('div','flat');P.forEach(p=>{const a=snap(p.ar),x=h('div','fp'),m=h('div','m');m.style.cssText=`aspect-ratio:${a};width:min(100%,calc(68vh*${a}))`;m.append(media(p));m.onclick=e=>{if(!e.target.closest('.arr'))openPost(p)};x.append(m,h('div','t',`<b>${esc(nameOf(p))}</b><span>${esc(p.title)}</span>`));w.append(x)});f.append(w)}}
 /* ---------- sheets ---------- */
 let nSheets=0;
+const setVV=()=>document.documentElement.style.setProperty('--vvh',(window.visualViewport?visualViewport.height:innerHeight)+'px');setVV();if(window.visualViewport)visualViewport.addEventListener('resize',setVV);
+let GS=null;import('./js/gestures.js').then(m=>GS=m).catch(e=>console.warn('vzn gestures:',e));
 function sheet(inner,cls=''){nSheets++;hap('m');const o=h('div','ov'),s=h('div','sh glass '+cls),sc=h('div','scr');sc.append(inner);s.append(sc);o.append(s);
  const tr=tabs.getBoundingClientRect(),rmv=Element.prototype.remove.bind(o),dur=matchMedia('(prefers-reduced-motion:reduce)').matches?1:560;let closing=false;
  document.body.append(o);tabs.classList.add('away');
@@ -263,18 +265,18 @@ function sheet(inner,cls=''){nSheets++;hap('m');const o=h('div','ov'),s=h('div',
  const a=s.animate([{width:tr.width+'px',height:tr.height+'px',borderRadius:'99px',bottom:(innerHeight-tr.bottom)+'px'},{width:fr.width+'px',height:fr.height+'px',borderRadius:'32px',bottom:fb}],{duration:dur,easing:'cubic-bezier(.3,1.2,.4,1)'});a.onfinish=()=>{sc.style.cssText=''};
  sc.animate([{opacity:0},{opacity:0,offset:.3},{opacity:1}],{duration:dur});o.animate([{background:'rgba(0,0,0,0)'},{background:'rgba(0,0,0,.4)'}],{duration:dur*.7,fill:'backwards'});
  const fin=()=>{rmv();if(--nSheets<=0){nSheets=0;tabs.classList.remove('away')}};
- o.remove=()=>{if(closing)return;closing=true;const c=s.getBoundingClientRect();pin(c.width);sc.animate([{opacity:1},{opacity:0}],{duration:dur*.3,fill:'forwards'});
+ o.remove=()=>{if(closing)return;closing=true;o.closing=true;const c=s.getBoundingClientRect();pin(c.width);sc.animate([{opacity:1},{opacity:0}],{duration:dur*.3,fill:'forwards'});
   const b=s.animate([{width:c.width+'px',height:c.height+'px',borderRadius:'32px',bottom:fb},{width:tr.width+'px',height:tr.height+'px',borderRadius:'99px',bottom:(innerHeight-tr.bottom)+'px'}],{duration:dur*.8,easing:'cubic-bezier(.5,0,.2,1)',fill:'forwards'});
   o.animate([{background:'rgba(0,0,0,.4)'},{background:'rgba(0,0,0,0)'}],{duration:dur*.8,fill:'forwards'});b.onfinish=fin};
- o.fling=()=>{if(closing)return;closing=true;s.style.transition='transform .28s ease-in,opacity .28s';s.style.transform='translate(-50%,105vh)';o.animate([{opacity:1},{opacity:0}],{duration:280,fill:'forwards'});setTimeout(fin,280)};
- o.onclick=e=>{if(e.target==o)o.remove()};o.sheet=s;return o}
+ o.fling=()=>{if(closing)return;closing=true;o.closing=true;s.style.transition='transform .28s ease-in,opacity .28s';s.style.transform='translate(-50%,105vh)';o.animate([{opacity:1},{opacity:0}],{duration:280,fill:'forwards'});setTimeout(fin,280)};
+ o.onclick=e=>{if(e.target==o)o.remove()};o.sheet=s;if(GS)GS.dragDismiss(o,s,{hap});else import('./js/gestures.js').then(m=>{GS=m;m.dragDismiss(o,s,{hap})});return o}
 document.addEventListener('keydown',e=>{if(e.key=='Escape'){const o=$$('.ov').pop();if(o)o.remove()}});
 /* ---------- supabase ---------- */
 let sb=null,user=null,online=false,authOv=null,cloudErr='';
 const loadJS=src=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.append(s)});
 const tmo=(p,ms)=>Promise.race([p,new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),ms))]);
 const pub=path=>sb.storage.from('media').getPublicUrl(path).data.publicUrl;
-async function sbInit(){if(!VZN.key)return;
+async function sbInit(){cloudErr='';if(!VZN.key){cloudErr='no API key configured';return}
  try{await tmo(loadJS('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'),7000);
   sb=window.supabase.createClient(VZN.url,VZN.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   const{data}=await sb.auth.getSession();user=data.session?data.session.user:null;
@@ -292,14 +294,15 @@ async function upData(d,name){const blob=await(await fetch(d)).blob(),path=`${us
 async function loadProfile(){if(!online)return;if(!user){me=baseMe();applyMe();return}
  let{data}=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();
  if(!data){const r=await sb.from('profiles').insert({id:user.id,username:'user_'+user.id.replace(/-/g,'').slice(0,8),display_name:(user.email||'you').split('@')[0]}).select().single();data=r.data}
- if(!data)return;me=Object.assign(blankMe(),data.settings||{},{name:data.display_name||'You',handle:data.username,bio:data.bio||'',avatarImg:data.avatar_url||''});DB.forEach(d=>{if(!me.blocks.find(b=>b.k==d.k))me.blocks.push({...d})});applyMe()}
+ if(!data)return;me=Object.assign(blankMe(),data.settings||{},{name:data.display_name||'You',handle:data.username,bio:data.bio||'',avatarImg:data.avatar_url||'',verified:!!data.verified});DB.forEach(d=>{if(!me.blocks.find(b=>b.k==d.k))me.blocks.push({...d})});applyMe()}
 async function saveProfile(){if(!online||!user)return true;
  try{if(me.avatarImg&&me.avatarImg.startsWith('data:'))me.avatarImg=await upData(me.avatarImg,'avatar.jpg');if(me.bannerImg&&me.bannerImg.startsWith('data:'))me.bannerImg=await upData(me.bannerImg,'banner.jpg');
-  const s={...me};['name','handle','bio','avatarImg'].forEach(k=>delete s[k]);
+  const s={...me};['name','handle','bio','avatarImg','verified'].forEach(k=>delete s[k]);
   const r=await sb.from('profiles').update({display_name:me.name,username:me.handle.toLowerCase().replace(/[^a-z0-9_.]/g,'').slice(0,30),bio:me.bio,avatar_url:me.avatarImg||null,settings:s}).eq('id',user.id);if(r.error)throw r.error;return true}
  catch(e){toast(/duplicate|unique/i.test(e.message||'')?'That handle is taken':'Could not sync profile');return false}}
 const AMSG={'Invalid login credentials':'That email and password don’t match, or the email isn’t confirmed yet.','Email not confirmed':'Confirm your email first. Check your inbox, then sign in.','User already registered':'That email already has an account. Sign in instead.'};
-function authSheet(msg,mode='in'){if(!online){toast(VZN.key?'Cloud is offline: '+cloudErr:'Add your Supabase key to turn on accounts');return}
+function authSheet(msg,mode='in'){if(!online){const w=h('div','',`<h3>Can’t reach vzn cloud</h3><p class="mut" style="line-height:1.5">${esc(cloudErr||'The connection failed')}. Check your network and try again. Your work stays saved on this device.</p><button class="pill on big" id="rt">Try again</button><div class="mut" id="am" role="status" style="text-align:center;min-height:20px"></div>`);const o=sheet(w);
+  $('#rt',w).onclick=async()=>{$('#am',w).textContent='Connecting…';await sbInit();if(online){o.remove();await loadProfile();await loadRemote();renderAll();authSheet(msg,mode)}else $('#am',w).textContent='Still offline: '+cloudErr};return}
  const w=h('div',''),redir=location.origin+location.pathname;let busy=false,em='';
  const say=(t,bad)=>{const a=$('#am',w);if(a)a.textContent=t;if(bad)hap('no')},lock=v=>{busy=v;$$('button',w).forEach(b=>b.disabled=v)};
  const run=async fn=>{if(busy)return;lock(true);try{await fn()}catch(e){say(AMSG[e.message]||e.message||'Something went wrong. Try again.',1)}lock(false)};
@@ -324,6 +327,7 @@ function onboard(){const w=h('div','',`<h3>Welcome to vzn</h3><p class="mut">Cho
   tm=setTimeout(async()=>{const r=await sb.from('profiles').select('id').eq('username',hd.value).maybeSingle();const free=!r.data||r.data.id==user.id;okH=free;hm.textContent=free?'Available':'Already taken'},350)};
  const finish=async(useForm)=>{if(useForm){if(!okH&&hd.value!=me.handle){hm.textContent='Pick an available handle first.';hap('no');return}me.name=$('#n',w).value.trim()||me.name||'You';me.handle=hd.value||me.handle}me.onboarded=true;const ok=await saveProfile();if(!ok){me.onboarded=false;return}o.remove();renderMe();if(useForm)hap('ok')};
  $('#go',w).onclick=()=>finish(true);$('#sk2',w).onclick=()=>finish(false)}
+const VBADGE='<svg class="vb" viewBox="0 0 24 24" width="18" height="18" role="img" aria-label="Verified creator" style="vertical-align:-3px;margin-left:6px"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="var(--bg,#000)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const need=msg=>{if(online&&!user){authSheet(msg);return true}return false};
 async function publishRemote(rec,items){const{data:post,error}=await sb.from('posts').insert({user_id:user.id,title:rec.title,caption:rec.caption,credits:rec.credits,tags:rec.tags,ar:rec.ar}).select('id').single();if(error)throw error;const rows=[];
  for(let i=0;i<items.length;i++){const it=items[i];let path=null;if(it.blob){const ext=((it.blob.name||'').split('.').pop()||'').toLowerCase().replace(/[^a-z0-9]/g,'')||(it.t=='video'?'mp4':'jpg');path=`${user.id}/${post.id}/${i}.${ext}`;const up=await sb.storage.from('media').upload(path,it.blob,{contentType:it.blob.type,upsert:true});if(up.error)throw up.error}
@@ -332,8 +336,8 @@ async function publishRemote(rec,items){const{data:post,error}=await sb.from('po
 /* ---------- viewer ---------- */
 function openPost(p){
  let o,s;const dz=h('div','dz'),gr=h('div','grab','<button aria-label="Close">✕</button>'),vf=h('div','vf');
- const ar=p.ar||.8;vf.style.cssText=`width:min(100%,calc(56vh*${ar}));aspect-ratio:${ar}`;
- vf.append(media(p,{live:true}));$$('video',vf).forEach(v=>v.controls=true);dz.append(gr,vf);
+ const ar=p.ar||.8,stg=h('div','stg');vf.style.setProperty('--ar',ar);
+ vf.append(media(p,{live:true}));$$('video',vf).forEach(v=>v.controls=true);stg.append(vf);dz.append(gr,stg);
  const vi=h('div','vi',`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h3 style="margin:0">${esc(p.title||'Untitled')}</h3><span class="mut">${esc(nameOf(p))}</span></div><p style="margin:8px 0">${esc(p.caption)}</p><div class="mut">${esc(p.credits||'')}</div>`);
  const row=h('div','row'),cm=h('div');const b=(t,fn)=>{const x=h('button','glass pill',t);x.onclick=()=>fn(x);return x};
  const cnt=()=>p.remote?p.likes:(p.seed%40)+(state.l[p.id]?1:0);
@@ -352,13 +356,7 @@ function openPost(p){
  vi.append(row,inp,cm);const wrap=h('div','vwi');wrap.append(dz,vi);o=sheet(wrap,'vw');s=o.sheet;
  const close=()=>o.remove();
  $('button',gr).onclick=close;
- let y0=null,dy=0,t0=0,cap=false,armed=false;
- dz.addEventListener('pointerdown',e=>{if(e.target.closest('.arr,video,.p5.act'))return;y0=e.clientY;dy=0;t0=Date.now();cap=false;armed=false});
- dz.addEventListener('pointermove',e=>{if(y0==null)return;dy=Math.max(0,e.clientY-y0);if(!cap&&dy>8){cap=true;try{dz.setPointerCapture(e.pointerId)}catch{}}if(!cap)return;
-  if(!armed&&dy>120){armed=true;hap('m')}else if(armed&&dy<=120)armed=false;
-  s.style.transition='none';s.style.transform=`translate(-50%,${dy}px) scale(${1-dy/2200})`;o.style.background=`rgba(0,0,0,${.45*(1-Math.min(1,dy/450))})`});
- const end=()=>{if(y0==null)return;const v=dy/Math.max(1,Date.now()-t0);y0=null;if(cap&&(dy>120||(v>.6&&dy>40)))o.fling();else{s.style.transition='transform .5s var(--sp)';s.style.transform='';o.style.background=''}cap=false};
- dz.addEventListener('pointerup',end);dz.addEventListener('pointercancel',end)}
+}
 /* ---------- explore (JS masonry, still media) ---------- */
 let tag='All',exKey='';
 function drawChips(){const c=$('#chips');c.innerHTML='';['All','film','digital','series','process','music','p5'].forEach(t=>{const b=h('button','glass pill'+(tag==t?' on':''),t);b.onclick=()=>{tag=t;drawChips();renderExplore()};c.append(b)})}
@@ -385,26 +383,30 @@ function sketchEd(init,done){const w=h('div','',`<h3>p5 sketch</h3><div class="p
 function openPublish(){
  if(need('Sign in to post to vzn.'))return;
  const D={items:[],ar:'o',tags:new Set()};
- const w=h('div','',`<h3>New post</h3><div class="pfr" id="pfr"></div>
- <label class="dropz" id="dz"><input type="file" id="fl" accept="image/*,video/*" multiple><b style="color:var(--fg)">Add photos or videos</b><span>Drop files here or tap to browse. Add several to make a carousel.</span></label>
- <div class="row"><button class="glass pill" id="sk">+ p5 sketch</button></div><div class="strip" id="st"></div>
- <label class="k">Shape</label><div class="row" id="ars"></div>
- <input id="ti" placeholder="Title"><textarea id="ca" placeholder="Caption (or write a note with no media)"></textarea><input id="cr" placeholder="Credits, gear or tools">
- <label class="k">Tags</label><div class="row" id="tg"></div><button class="pill on big" id="go" disabled>Publish</button>`);
+ const w=h('div','',`<h3 id="pt">Add media</h3><div class="pfr" id="pfr"></div>
+ <div class="pst" data-s="1"><label class="dropz" id="dz"><input type="file" id="fl" accept="image/*,video/*" multiple><b style="color:var(--fg)">Add photos or videos</b><span>Drop files here or tap to browse. Add several to make a carousel.</span></label>
+ <div class="row"><button class="glass pill" id="sk">+ p5 sketch</button></div><div class="strip" id="st"></div></div>
+ <div class="pst" data-s="2"><label class="k">Shape</label><div class="row" id="ars"></div><p class="mut" style="margin:10px 0 0">Media is cropped to fill the shape. Preview is live.</p></div>
+ <div class="pst" data-s="3"><input id="ti" placeholder="Title"><textarea id="ca" placeholder="Caption (or write a note with no media)"></textarea><input id="cr" placeholder="Credits, gear or tools">
+ <label class="k">Tags</label><div class="row" id="tg"></div><button class="pill on big" id="go" disabled>Publish</button></div>
+ <div class="row" id="nav" style="justify-content:space-between;margin-top:14px"><button class="pill" id="bk">Back</button><button class="pill on" id="nx">Next</button></div>`);
+ let step=1;const T3=['Add media','Choose a shape','Details'];
  const o=sheet(w),cap=$('#ca',w),go=$('#go',w);
  const arv=()=>D.ar=='o'?clamp(D.items[0]?D.items[0].ar:.8,.5,2):D.ar;
- const refresh=()=>{const a=arv(),f=$('#pfr',w);f.style.cssText=`width:min(100%,${Math.min(300*a,420)}px);aspect-ratio:${a};display:${D.items.length?'block':'none'}`;f.innerHTML='';if(D.items.length)f.append(media({items:D.items,ar:a},{}));
+ const refresh=()=>{const a=arv(),f=$('#pfr',w);f.style.cssText=`width:min(100%,${Math.min(300*a,420)}px,calc(38dvh*${a}));aspect-ratio:${a};display:${D.items.length&&step>1?'block':'none'}`;f.innerHTML='';if(D.items.length&&step>1)f.append(media({items:D.items,ar:a},{}));
   const st=$('#st',w);st.innerHTML='';D.items.forEach((it,i)=>{const t=h('div','tile');t.append(it.t=='p5'?h('div','tx','p5'):it.t=='video'?Object.assign(h('video'),{src:it.url+'#t=0.1',muted:true}):Object.assign(h('img'),{src:it.url}));
    const x=h('b','','✕');x.onclick=()=>{D.items.splice(i,1);refresh()};const u=h('u','',`<button style="color:#fff">‹</button><button style="color:#fff">›</button>`);const[l,r]=$$('button',u);
    l.onclick=()=>{if(i>0){[D.items[i-1],D.items[i]]=[D.items[i],D.items[i-1]];refresh()}};r.onclick=()=>{if(i<D.items.length-1){[D.items[i+1],D.items[i]]=[D.items[i],D.items[i+1]];refresh()}};t.append(x,u);st.append(t)});
   const ch=$('#ars',w);ch.innerHTML='';AR.forEach(([n,v])=>{const b=h('button','glass pill'+(D.ar==v?' on':''),n);b.onclick=()=>{D.ar=v;refresh()};ch.append(b)});
   go.disabled=!(D.items.length||cap.value.trim())};
+ const show=n=>{const sk=n==2&&!D.items.length;step=sk?3:n;$$('.pst',w).forEach(e=>{const on=e.dataset.s==step;e.hidden=!on;if(on)e.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:260,easing:'ease-out'})});$('#pt',w).textContent=T3[step-1];$('#bk',w).style.visibility=step>1?'visible':'hidden';$('#nx',w).style.display=step<3?'':'none';refresh()};
+ $('#nx',w).onclick=()=>{hap('l');show(step+1)};$('#bk',w).onclick=()=>{hap('l');show(step==3&&!D.items.length?1:step-1)};
  const add=async fs=>{const r=(await Promise.all([...fs].map(natural))).filter(Boolean);D.items.push(...r);refresh()};
  $('#fl',w).onchange=e=>add(e.target.files);const dz=$('#dz',w);
  dz.ondragover=e=>{e.preventDefault();dz.classList.add('hot')};dz.ondragleave=()=>dz.classList.remove('hot');dz.ondrop=e=>{e.preventDefault();dz.classList.remove('hot');add(e.dataTransfer.files)};
  const tg=()=>{const t=$('#tg',w);t.innerHTML='';['film','digital','series','process','music','p5'].forEach(n=>{const b=h('button','glass pill'+(D.tags.has(n)?' on':''),n);b.onclick=()=>{D.tags.has(n)?D.tags.delete(n):D.tags.add(n);tg()};t.append(b)})};
  $('#sk',w).onclick=()=>sketchEd('',c=>{D.items.push({t:'p5',code:c,ar:1});D.tags.add('p5');tg();refresh()});
- cap.oninput=refresh;tg();refresh();
+ cap.oninput=refresh;tg();show(1);
  go.onclick=async()=>{go.disabled=true;go.textContent=online?'Uploading…':'Publishing…';
   const items=D.items.length?D.items:[{t:'note',text:cap.value.trim(),ar:.8}],ar=D.items.length?arv():.8;
   const rec={id:'u'+Date.now(),seed:Math.floor(Math.random()*90)+5,items:items.map(i=>({t:i.t,blob:i.blob,code:i.code,text:i.text,ar:i.ar})),ar,title:$('#ti',w).value,caption:cap.value,credits:$('#cr',w).value,tags:[...D.tags],mine:true};
@@ -421,9 +423,9 @@ function applyMe(){const r=document.documentElement;r.style.setProperty('--ac',m
 function renderMe(){const v=$('#me');v.innerHTML='';tint(v,me.bg);const mine=P.filter(p=>p.mine),w=h('div','pf'+(me.align=='center'?' ctr':''));
  const hasB=me.banner!='none';
  if(hasB){const b=h('div','bn');b.style.background=me.banner=='image'&&me.bannerImg?`url("${me.bannerImg}") center/cover`:me.banner=='color'?me.bannerColor:`url("${art(99+me.name.length,2.2)}") center/cover`;v.append(b)}
- const hd=h('div','ph'+(hasB?' hb':''));hd.innerHTML=`<div class="av" style="border-radius:${RAD[me.shape]}"><img src="${me.avatarImg||av(me.name)}" alt=""></div><h1 class="nm">${esc(me.name)}</h1><div class="mut">@${esc(me.handle)}</div>`;
+ const hd=h('div','ph'+(hasB?' hb':''));hd.innerHTML=`<div class="av" style="border-radius:${RAD[me.shape]}"><img src="${me.avatarImg||av(me.name)}" alt=""></div><h1 class="nm">${esc(me.name)}${me.verified?VBADGE:''}</h1><div class="mut">@${esc(me.handle)}</div>`;
  const ar=h('div','row'),eb=h('button','pill on','Edit profile'),sb2=h('button','glass pill','Share');eb.onclick=editMe;sb2.onclick=()=>{try{navigator.clipboard.writeText(location.href)}catch{}toast('Profile link copied')};ar.append(eb,sb2);
- if(online&&!user){const si=h('button','glass pill','Sign in');si.onclick=()=>authSheet();ar.append(si)}hd.append(ar);w.append(hd);
+ if(!user){const si=h('button','glass pill','Sign in');si.onclick=()=>authSheet();ar.append(si)}hd.append(ar);w.append(hd);
  const B={bio:()=>h('div','',`<span class="glass pill"><i class="dot"></i>${esc(me.avail)}</span><p class="bio">${esc(me.bio)}</p>`),
   stats:()=>me.hide?null:h('div','stats',online?`<div><b>${mine.length}</b>Posts</div>`:`<div><b>${mine.length}</b>Posts</div><div><b>2.4k</b>Followers</div><div><b>318</b>Following</div>`),
   now:()=>(!me.making&&!me.listening&&!me.at)?null:h('div','now glass',`<span>Making</span><div>${esc(me.making)}</div><span>Listening</span><div>${esc(me.listening)}</div><span>At</span><div>${esc(me.at)}</div>`),
@@ -495,5 +497,5 @@ setTheme(ls.get('th','dark'));applyMe();drawChips();renderFeed();snapInd('feed')
  const end=()=>{if(done)return;done=true;sp.classList.add('out');setTimeout(()=>sp.remove(),750)};
  (function f(now){if(done)return;const t=(now-t0)/1000;mark(c,t,1-Math.pow(1-Math.min(1,t/1.5),3),fgc());if(t>.9)$('#sw').classList.add('in');if(t>(rm?.6:2.5))end();else requestAnimationFrame(f)})(t0);sp.onclick=end})();
 idb('readonly',s=>s.getAll()).then(rows=>{if(!rows||!rows.length)return;rows.sort((a,b)=>a.id<b.id?1:-1).forEach(r=>{if(!r.items)r.items=[{t:r.type=='note'?'note':r.type,blob:r.blob,text:r.caption,ar:.8}];r.items.forEach(i=>{if(i.blob)i.url=URL.createObjectURL(i.blob)});r.ar=r.ar||r.items[0].ar||.8;r.tags=Array.isArray(r.tags)?r.tags:[];r.seed=r.seed||7;LOCAL.unshift(r)});rebuildP();renderAll()});
-sbInit().then(async()=>{if(!online){if(VZN.key)toast('Cloud offline: '+cloudErr);return}await loadProfile();await loadRemote();renderAll();if(user&&!me.onboarded)onboard()});
+sbInit().then(async()=>{if(!online){toast('Cloud offline: '+cloudErr);return}await loadProfile();await loadRemote();renderAll();if(user&&!me.onboarded)onboard()});
 </script></body></html>
